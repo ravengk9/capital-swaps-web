@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Capital Swaps</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: var(--tg-theme-bg-color, #ffffff);
+    --text: var(--tg-theme-text-color, #16181d);
+    --hint: var(--tg-theme-hint-color, #6f7680);
+    --section: var(--tg-theme-secondary-bg-color, #f2f3f5);
+    --rule: color-mix(in srgb, var(--hint) 22%, transparent);
+    --metal: #8a94a3;
+    --metal-hi: #c9d0da;
+    --metal-lo: #5f6875;
+    --up: #2f8f5b;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: var(--tg-theme-bg-color, #17191d);
+      --text: var(--tg-theme-text-color, #eef0f3);
+      --hint: var(--tg-theme-hint-color, #8d949e);
+      --section: var(--tg-theme-secondary-bg-color, #0f1114);
+      --up: #4cc184;
+    }
+  }
+  body[data-nivel="oro"]    { --metal: #b8892b; --metal-hi: #e6c46e; --metal-lo: #7d5a14; }
+  body[data-nivel="plata"]  { --metal: #8a94a3; --metal-hi: #d3d9e2; --metal-lo: #5b6471; }
+  body[data-nivel="bronce"] { --metal: #a8653a; --metal-hi: #d9996b; --metal-lo: #6e3d1f; }
+
+  * { box-sizing: border-box; margin: 0; }
+  html, body { background: var(--bg); }
+  body {
+    color: var(--text);
+    font-family: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 16px;
+    line-height: 1.45;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+    padding: env(safe-area-inset-top, 0) 0 calc(env(safe-area-inset-bottom, 0) + 24px);
+  }
+  main { max-width: 480px; margin: 0 auto; padding: 20px 20px 0; }
+
+  .saludo { font-size: 15px; color: var(--hint); font-weight: 500; }
+  .nombre { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin-top: 2px; }
+
+  /* La franja del nivel: el único elemento con color propio */
+  .nivel {
+    margin-top: 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px;
+    border-radius: 14px;
+    background: linear-gradient(115deg, var(--metal-lo) 0%, var(--metal) 28%, var(--metal-hi) 52%, var(--metal) 74%, var(--metal-lo) 100%);
+    color: #fff;
+    text-shadow: 0 1px 1px rgba(0,0,0,.25);
+  }
+  .nivel b { font-size: 17px; font-weight: 800; letter-spacing: 0.01em; }
+  .nivel span { font-size: 14px; font-weight: 600; opacity: .95; }
+
+  .capital { margin-top: 26px; }
+  .capital small { display: block; font-size: 14px; color: var(--hint); font-weight: 500; }
+  .capital strong {
+    display: block; margin-top: 2px;
+    font-size: clamp(34px, 11vw, 44px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.1;
+  }
+  .tasas-socio { margin-top: 8px; font-size: 14px; color: var(--hint); }
+  .tasas-socio em { font-style: normal; color: var(--text); font-weight: 600; }
+
+  .curva { margin-top: 22px; }
+  .curva svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .curva .area { fill: var(--metal); opacity: .16; }
+  .curva .linea { fill: none; stroke: var(--metal); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+  .curva .punto { fill: var(--bg); stroke: var(--metal); stroke-width: 2.5; }
+  .curva .base { stroke: var(--rule); stroke-width: 1; }
+  .curva text { fill: var(--hint); font-size: 11px; font-family: inherit; font-weight: 600; }
+
+  h2 { font-size: 17px; font-weight: 700; margin-top: 30px; }
+  .lista { margin-top: 6px; list-style: none; padding: 0; }
+  .lista li {
+    display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 2px 12px;
+    padding: 12px 0; border-bottom: 1px solid var(--rule);
+  }
+  .lista li:last-child { border-bottom: 0; }
+  .lista .k { font-weight: 600; }
+  .lista .v { font-weight: 700; text-align: right; }
+  .lista .g { grid-column: 2; text-align: right; font-size: 13px; color: var(--up); font-weight: 600; }
+  .nota { margin-top: 10px; font-size: 13px; color: var(--hint); }
+
+  .mercado { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--rule); border-radius: 14px; overflow: hidden; }
+  .mercado div { background: var(--section); padding: 14px 16px; }
+  .mercado small { display: block; font-size: 13px; color: var(--hint); font-weight: 500; }
+  .mercado b { display: block; margin-top: 2px; font-size: 20px; font-weight: 800; letter-spacing: -0.01em; }
+
+  .estado { padding-top: 30vh; text-align: center; color: var(--hint); }
+  .estado p { max-width: 30ch; margin: 0 auto; }
+  .estado button {
+    margin-top: 16px; padding: 11px 22px; border: 0; border-radius: 12px; font: inherit; font-weight: 700;
+    background: var(--tg-theme-button-color, #2a7de1); color: var(--tg-theme-button-text-color, #fff); cursor: pointer;
+  }
+  button:focus-visible { outline: 3px solid var(--metal); outline-offset: 2px; }
+  .cargando { width: 26px; height: 26px; margin: 0 auto 12px; border: 3px solid var(--rule); border-top-color: var(--hint); border-radius: 50%; animation: gira .8s linear infinite; }
+  @keyframes gira { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .cargando { animation: none; } }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body data-nivel="plata">
+<main id="app">
+  <div class="estado"><div class="cargando" aria-hidden="true"></div><p>Cargando tu información…</p></div>
+</main>
+
+<script>
+// Dirección del backend. Cuando configures api.tudominio.com, cámbiala aquí.
+const API = "https://web-production-5af5a.up.railway.app";
+
+const tg = window.Telegram && window.Telegram.WebApp;
+const app = document.getElementById("app");
+const cop = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
+const pct = (x, d = 1) => (x * 100).toLocaleString("es-CO", { minimumFractionDigits: d, maximumFractionDigits: d }) + " %";
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const titulo = s => { s = String(s || "").toLowerCase(); return s.charAt(0).toUpperCase() + s.slice(1); };
+
+// Modo demo para ver el diseño en un navegador: index.html?demo=1
+const DEMO = new URLSearchParams(location.search).has("demo");
+const DEMO_DATA = {
+  me: { es_socio: true, first_name: "Andres", nombre: "Andres", capital: 8987262.67, nivel: "PLATA",
+        tasa_quincenal: 0.007, tasa_mensual: 0.014049, tasa_ea: 0.18224,
+        proyeccion: [{ meses: 3, capital: 9371395, ganancia: 384133 }, { meses: 6, capital: 9771947, ganancia: 784684 }, { meses: 12, capital: 10625142, ganancia: 1637879 }] },
+  tasas: { compra: 3213, venta: 3101 }
+};
+
+function estado(msg, reintentar) {
+  app.innerHTML = `<div class="estado"><p>${esc(msg)}</p>${reintentar ? '<button type="button" id="re">Reintentar</button>' : ""}</div>`;
+  if (reintentar) document.getElementById("re").onclick = cargar;
+}
+
+async function pedir(path) {
+  if (DEMO) return DEMO_DATA[path.slice(1)];
+  const r = await fetch(API + path, { headers: { Authorization: "tma " + tg.initData } });
+  if (r.status === 401) throw { tipo: "sesion" };
+  if (!r.ok) throw { tipo: "servidor" };
+  return r.json();
+}
+
+function curva(capital, rm, color) {
+  const W = 320, H = 120, padT = 14, padB = 20;
+  const vals = Array.from({ length: 13 }, (_, m) => capital * Math.pow(1 + rm, m));
+  const min = vals[0], max = vals[12], span = (max - min) || 1;
+  const x = m => (m / 12) * W;
+  const y = v => padT + (H - padT - padB) * (1 - (v - min) / span);
+  const pts = vals.map((v, m) => `${x(m).toFixed(1)},${y(v).toFixed(1)}`);
+  const linea = "M" + pts.join(" L");
+  const area = `${linea} L${W},${H - padB} L0,${H - padB} Z`;
+  const marcas = [3, 6, 12].map(m =>
+    `<circle class="punto" cx="${x(m)}" cy="${y(vals[m])}" r="4.5"/>` +
+    `<text x="${x(m)}" y="${H - 4}" text-anchor="${m === 12 ? "end" : "middle"}">${m} meses</text>`).join("");
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Crecimiento proyectado de tu capital en 12 meses">
+    <line class="base" x1="0" x2="${W}" y1="${H - padB}" y2="${H - padB}"/>
+    <path class="area" d="${area}"/><path class="linea" d="${linea}"/>${marcas}
+    <text x="0" y="${H - 4}">Hoy</text></svg>`;
+}
+
+function mercado(t) {
+  if (!t || (t.compra == null && t.venta == null)) return "";
+  const v = n => n == null ? "Sin definir" : cop.format(n);
+  return `<h2>USDT hoy</h2>
+    <div class="mercado">
+      <div><small>Te vendemos a</small><b>${v(t.compra)}</b></div>
+      <div><small>Te compramos a</small><b>${v(t.venta)}</b></div>
+    </div>`;
+}
+
+function pintar(me, t) {
+  const nombre = esc(me.nombre || me.first_name || "");
+  if (!me.es_socio) {
+    app.innerHTML = `
+      <p class="saludo">Hola</p><p class="nombre">${esc(me.first_name)}</p>
+      ${mercado(t)}
+      <p class="nota">El portal de socios aparece aquí cuando tu cuenta de Telegram está registrada como socio de Capital Swaps. Si ya eres socio, escríbenos por el bot para vincularla.</p>`;
+    return;
+  }
+  const nivel = String(me.nivel || "").toLowerCase();
+  if (["oro", "plata", "bronce"].includes(nivel)) document.body.dataset.nivel = nivel;
+  const tieneTasa = me.tasa_quincenal != null;
+
+  app.innerHTML = `
+    <p class="saludo">Hola</p><p class="nombre">${nombre}</p>
+    ${me.nivel ? `<div class="nivel"><b>Socio ${esc(titulo(me.nivel))}</b>${tieneTasa ? `<span>${pct(me.tasa_quincenal, 2)} quincenal</span>` : ""}</div>` : ""}
+    <div class="capital"><small>Tu capital hoy</small><strong>${cop.format(me.capital)}</strong>
+      ${tieneTasa ? `<p class="tasas-socio">Rentabilidad efectiva anual de <em>${pct(me.tasa_ea)}</em></p>` : ""}
+    </div>
+    ${tieneTasa ? `
+      <div class="curva">${curva(me.capital, me.tasa_mensual)}</div>
+      <h2>Si mantienes tu capital</h2>
+      <ul class="lista">${me.proyeccion.map(p => `
+        <li><span class="k">En ${p.meses} meses</span><span class="v">${cop.format(p.capital)}</span>
+            <span class="g">+${cop.format(p.ganancia)}</span></li>`).join("")}
+      </ul>
+      <p class="nota">Proyección con interés compuesto a la tasa actual de tu nivel. No es un valor garantizado.</p>` : ""}
+    ${mercado(t)}`;
+}
+
+async function cargar() {
+  if (!DEMO && (!tg || !tg.initData)) {
+    estado("Abre esta app desde el bot de Capital Swaps en Telegram.");
+    return;
+  }
+  app.innerHTML = '<div class="estado"><div class="cargando" aria-hidden="true"></div><p>Cargando tu información…</p></div>';
+  try {
+    const [me, t] = await Promise.all([pedir("/me"), pedir("/tasas").catch(() => null)]);
+    pintar(me, t);
+  } catch (e) {
+    if (e && e.tipo === "sesion") estado("Tu sesión venció. Cierra la app y vuelve a abrirla desde el bot.");
+    else estado("No se pudo cargar tu información. Revisa tu conexión e inténtalo de nuevo.", true);
+  }
+}
+
+if (tg) { tg.ready(); tg.expand(); }
+cargar();
+</script>
+</body>
+</html>
