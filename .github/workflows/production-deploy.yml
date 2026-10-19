@@ -34,7 +34,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     environment:
       name: production
-      url: https://tairq.smarthinkscorp.com
+      url: https://app.capitalswaps.com
     outputs:
       issue_numbers: ${{ steps.find-issues.outputs.issue_numbers }}
     steps:
