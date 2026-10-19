@@ -1,0 +1,203 @@
+name: Deploy to Production
+
+# Despliega a tairq.smarthinkscorp.com SOLO cuando un PR se MERGEA a main
+# o mediante ejecucion manual (workflow_dispatch).
+#
+# El sitio es un unico archivo estatico (index.html): no hay build, tests
+# ni dependencias que instalar, asi que el workflow solo sube ese archivo.
+#
+# TRANSPORTE: rsync sobre SSH (puerto 65002 de Hostinger).
+on:
+  pull_request:
+    branches: [main]
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Motivo del despliegue manual"
+        required: true
+        type: string
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to Hostinger
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Solo ejecuta en merge real a main o despacho manual
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    environment:
+      name: production
+      url: https://tairq.smarthinkscorp.com
+    outputs:
+      issue_numbers: ${{ steps.find-issues.outputs.issue_numbers }}
+    steps:
+      - name: Rechazar despliegues manuales desde ramas que no sean main
+        if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::A produccion solo se despliega desde main. Rama recibida: ${{ github.ref_name }}"
+          echo "Si el cambio esta en develop, mergealo a main primero."
+          exit 1
+
+      - name: Deployment context
+        env:
+          TRIGGER: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          REASON: ${{ inputs.reason }}
+        run: |
+          echo "Trigger: $TRIGGER"
+          echo "Ref: ${{ github.ref }}"
+          if [ "$TRIGGER" = "workflow_dispatch" ]; then
+            echo "Despliegue manual - motivo: $REASON"
+          else
+            echo "PR #$PR_NUMBER mergeado desde $HEAD_REF"
+          fi
+
+      - name: Check required secrets
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          missing=""
+          for name in SSH_HOST SSH_PORT SSH_USER SSH_PRIVATE_KEY DEPLOY_PATH; do
+            value="${!name-}"
+            [ -z "${value}" ] && missing="${missing} ${name}"
+          done
+          if [ -n "${missing}" ]; then
+            echo "::error::Faltan secretos:${missing} - crealos en Settings > Secrets and variables > Actions"
+            exit 1
+          fi
+
+          if ! printf '%s' "${SSH_PORT}" | grep -Eq '^[0-9]+$'; then
+            echo "::error::SSH_PORT debe ser solo digitos. Hostinger usa 65002."
+            exit 1
+          fi
+
+          case "${DEPLOY_PATH}" in
+            /*) ;;
+            *) echo "::error::DEPLOY_PATH debe ser una ruta absoluta (empezar por /)."; exit 1 ;;
+          esac
+          case "${DEPLOY_PATH%/}" in
+            */public_html/*) ;;
+            *)
+              echo "::error::DEPLOY_PATH debe ubicarse dentro de public_html para evitar tocar otras carpetas del servidor."
+              exit 1 ;;
+          esac
+          echo "Secretos presentes y con formato valido."
+
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          ref: main
+
+      - name: Verify index.html exists
+        run: test -f index.html || { echo "::error::index.html no existe en la raiz del repo"; exit 1; }
+
+      - name: Preparar SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "${SSH_PRIVATE_KEY}" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+
+          if [ -n "${SSH_KNOWN_HOSTS}" ]; then
+            printf '%s\n' "${SSH_KNOWN_HOSTS}" > ~/.ssh/known_hosts
+          else
+            echo "::warning::SSH_KNOWN_HOSTS no esta definido; se usa ssh-keyscan (sin proteccion MITM en el primer contacto)."
+            ssh-keyscan -p "${SSH_PORT}" -H "${SSH_HOST}" > ~/.ssh/known_hosts 2>/dev/null
+          fi
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Subir index.html
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          rsync -lvz --no-perms --no-owner --no-group \
+            -e "ssh -i ~/.ssh/id_deploy -p ${SSH_PORT}" \
+            index.html "${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/index.html"
+
+      - name: Verify deployed site
+        run: |
+          for i in 1 2 3; do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 30 -H 'Cache-Control: no-cache' https://tairq.smarthinkscorp.com/ || true)
+            if [ "$code" = "200" ] || [ "$code" = "301" ] || [ "$code" = "302" ]; then
+              echo "OK: el sitio responde exitosamente (HTTP $code)."
+              exit 0
+            fi
+            echo "Intento $i: codigo HTTP $code; reintentando en 10s..."
+            sleep 10
+          done
+          echo "::error::El sitio de produccion no respondio como se esperaba."
+          exit 1
+
+      - name: Find linked issues
+        id: find-issues
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const text = `${pr.title || ''} ${pr.body || ''}`;
+            const refs = [...text.matchAll(/(?:fix(?:es|ed)?|close[sd]?|resolve[sd]?)\s+#(\d+)|#(\d+)/gi)];
+            const numbers = [...new Set(refs.map(m => m[1] || m[2]).filter(Boolean))];
+            core.info(`Issues encontradas: ${numbers.join(', ') || 'ninguna'}`);
+            core.setOutput('issue_numbers', numbers.join(','));
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "### Despliegue a produccion" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Sitio:** https://tairq.smarthinkscorp.com" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Commit:** \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Disparado por:** ${{ github.event_name }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Borrar la clave
+        if: always()
+        run: rm -f ~/.ssh/id_deploy
+
+  notify-issues:
+    name: Notify Linked Issues
+    needs: [deploy]
+    if: needs.deploy.outputs.issue_numbers != ''
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Comment on issues
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const numbers = '${{ needs.deploy.outputs.issue_numbers }}'.split(',').filter(Boolean);
+            for (const n of numbers) {
+              try {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: Number(n),
+                  body: `Desplegado en produccion (tairq.smarthinkscorp.com) como parte del PR #${context.payload.pull_request.number}`,
+                });
+              } catch (error) {
+                core.warning(`No se pudo comentar en #${n}: ${error.message}`);
+              }
+            }
