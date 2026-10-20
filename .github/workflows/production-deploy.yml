@@ -1,13 +1,12 @@
 name: Deploy to Production
 
-# Despliega a tairq.smarthinkscorp.com SOLO cuando un PR se MERGEA a main
-# o mediante ejecucion manual (workflow_dispatch).
+# Despliega a app.capitalswaps.com SOLO cuando un PR se MERGEA a main
+# o mediante ejecucion manual (workflow_dispatch) desde main.
 #
 # El sitio es un unico archivo estatico (index.html): no hay build, tests
 # ni dependencias que instalar, asi que el workflow solo sube ese archivo.
 #
 # TRANSPORTE: rsync sobre SSH (puerto 65002 de Hostinger).
-name: Deploy
 
 on:
   pull_request:
@@ -27,6 +26,9 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  SITE_URL: https://app.capitalswaps.com
+
 jobs:
   deploy:
     name: Deploy to Hostinger
@@ -36,14 +38,16 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     environment:
       name: production
-      url: https://tairq.smarthinkscorp.com
+      url: https://app.capitalswaps.com
     outputs:
       issue_numbers: ${{ steps.find-issues.outputs.issue_numbers }}
     steps:
       - name: Rechazar despliegues manuales desde ramas que no sean main
         if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
+        env:
+          RAMA: ${{ github.ref_name }}
         run: |
-          echo "::error::A produccion solo se despliega desde main. Rama recibida: ${{ github.ref_name }}"
+          echo "::error::A produccion solo se despliega desde main. Rama recibida: $RAMA"
           echo "Si el cambio esta en develop, mergealo a main primero."
           exit 1
 
@@ -99,7 +103,7 @@ jobs:
           echo "Secretos presentes y con formato valido."
 
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@v4
         with:
           ref: main
 
@@ -141,7 +145,7 @@ jobs:
       - name: Verify deployed site
         run: |
           for i in 1 2 3; do
-            code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 30 -H 'Cache-Control: no-cache' https://tairq.smarthinkscorp.com/ || true)
+            code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 30 -H 'Cache-Control: no-cache' "${SITE_URL}/" || true)
             if [ "$code" = "200" ] || [ "$code" = "301" ] || [ "$code" = "302" ]; then
               echo "OK: el sitio responde exitosamente (HTTP $code)."
               exit 0
@@ -155,7 +159,7 @@ jobs:
       - name: Find linked issues
         id: find-issues
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v9
+        uses: actions/github-script@v7
         with:
           script: |
             const pr = context.payload.pull_request;
@@ -170,7 +174,7 @@ jobs:
         run: |
           echo "### Despliegue a produccion" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Sitio:** https://tairq.smarthinkscorp.com" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Sitio:** ${SITE_URL}" >> "$GITHUB_STEP_SUMMARY"
           echo "- **Commit:** \`${{ github.sha }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- **Disparado por:** ${{ github.event_name }}" >> "$GITHUB_STEP_SUMMARY"
 
@@ -187,17 +191,19 @@ jobs:
       issues: write
     steps:
       - name: Comment on issues
-        uses: actions/github-script@v9
+        uses: actions/github-script@v7
+        env:
+          ISSUES: ${{ needs.deploy.outputs.issue_numbers }}
         with:
           script: |
-            const numbers = '${{ needs.deploy.outputs.issue_numbers }}'.split(',').filter(Boolean);
+            const numbers = (process.env.ISSUES || '').split(',').filter(Boolean);
             for (const n of numbers) {
               try {
                 await github.rest.issues.createComment({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   issue_number: Number(n),
-                  body: `Desplegado en produccion (tairq.smarthinkscorp.com) como parte del PR #${context.payload.pull_request.number}`,
+                  body: `Desplegado en produccion (${process.env.SITE_URL}) como parte del PR #${context.payload.pull_request.number}`,
                 });
               } catch (error) {
                 core.warning(`No se pudo comentar en #${n}: ${error.message}`);
