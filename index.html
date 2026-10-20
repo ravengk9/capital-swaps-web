@@ -391,6 +391,33 @@ const DEMO_DATA = {
 
 let ME = null, TASAS = null;
 
+// Última tasa buena guardada en el teléfono, por si la consulta falla
+function tasasGuardadas() {
+  try { const t = JSON.parse(localStorage.getItem("cs_tasas") || "null"); return t && (t.compra || t.venta) ? t : null; } catch (e) { return null; }
+}
+function guardarTasas(t) {
+  try { if (t && (t.compra || t.venta)) localStorage.setItem("cs_tasas", JSON.stringify(t)); } catch (e) {}
+}
+async function pedirConReintentos(path, intentos = 3) {
+  for (let i = 0; ; i++) {
+    try { return await pedir(path); }
+    catch (e) {
+      if (i >= intentos - 1 || (e && e.tipo === "sesion")) throw e;
+      await new Promise(r => setTimeout(r, 800 * (i + 1)));
+    }
+  }
+}
+async function cargarTasas() {
+  try {
+    const t = await pedirConReintentos("/tasas");
+    if (t && (t.compra || t.venta)) { TASAS = t; guardarTasas(t); }
+    else if (!TASAS) TASAS = tasasGuardadas();
+  } catch (e) {
+    if (!TASAS) TASAS = tasasGuardadas();
+  }
+  return TASAS;
+}
+
 // ===== Pantalla de carga con avance por etapas reales =====
 let objetivo = 0, mostrado = 0, animando = false;
 function avanzar(valor, texto) {
@@ -578,7 +605,7 @@ function pintarPrecios(error) {
 async function cargarPrecios() {
   if (cargandoPrecios || (PRECIOS && Date.now() - precioHora < 120000)) return;
   cargandoPrecios = true;
-  try { PRECIOS = await pedir("/precios"); precioHora = Date.now(); pintarPrecios(); }
+  try { PRECIOS = await pedirConReintentos("/precios", 2); precioHora = Date.now(); pintarPrecios(); }
   catch (e) { pintarPrecios(true); }
   cargandoPrecios = false;
 }
@@ -640,7 +667,7 @@ async function cargarHistorial() {
   if (OPS !== null || cargandoHist) { pintarHistorial(); return; }
   cargandoHist = true; pintarHistorial();
   try {
-    const r = await pedir("/historial");
+    const r = await pedirConReintentos("/historial", 2);
     OPS = r.operaciones || [];
   } catch (e) {
     $("h-lista").innerHTML = '<li class="vacio">No se pudo cargar tu historial.<br><button class="boton" type="button" id="h-reintentar" style="width:auto;margin:14px auto 0">Reintentar</button></li>';
@@ -660,7 +687,7 @@ function ir(vista) {
   document.querySelector('nav button[data-ir="' + vista + '"]').setAttribute("aria-current", "page");
   window.scrollTo(0, 0);
   if (vista === "historial") cargarHistorial();
-  if (vista === "usdt") cargarPrecios();
+  if (vista === "usdt") { cargarPrecios(); if (!TASAS || !(TASAS.compra || TASAS.venta)) cargarTasas().then(pintarUsdt); }
   if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
   pintarBarraTg(vista === "inicio");
 }
@@ -686,9 +713,9 @@ async function cargar() {
   if (!DEMO && (!tg || !tg.initData)) { errorCarga("Abre esta app desde el bot de Capital Swaps en Telegram.", false); return; }
   avanzar(20, "Buscando tu información…");
   try {
-    const pMe = pedir("/me").then(r => { avanzar(objetivo + 45, "Calculando tu proyección…"); return r; });
-    const pTasas = pedir("/tasas").catch(() => null).then(r => { avanzar(objetivo + 25); return r; });
-    [ME, TASAS] = await Promise.all([pMe, pTasas]);
+    const pMe = pedirConReintentos("/me").then(r => { avanzar(objetivo + 45, "Calculando tu proyección…"); return r; });
+    const pTasas = cargarTasas().then(r => { avanzar(objetivo + 25); return r; });
+    [ME] = await Promise.all([pMe, pTasas]);
     pintarInicio(); pintarProyeccion(); pintarUsdt();
     $("app").hidden = false; $("nav").hidden = false; document.body.classList.add("en-inicio");
     avanzar(100, "¡Listo!");
