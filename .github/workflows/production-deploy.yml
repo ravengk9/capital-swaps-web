@@ -3,8 +3,9 @@ name: Deploy to Production
 # Despliega a app.capitalswaps.com SOLO cuando un PR se MERGEA a main
 # o mediante ejecucion manual (workflow_dispatch) desde main.
 #
-# El sitio es un unico archivo estatico (index.html): no hay build, tests
-# ni dependencias que instalar, asi que el workflow solo sube ese archivo.
+# Sube la app (index.html), la API en PHP (carpeta api/) y la configuracion
+# privada (token del bot y credenciales de Google) a una carpeta FUERA de
+# public_html: /home/<usuario>/capitalswaps-private
 #
 # TRANSPORTE: rsync sobre SSH (puerto 65002 de Hostinger).
 
@@ -73,10 +74,12 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          GOOGLE_CREDENTIALS_B64: ${{ secrets.GOOGLE_CREDENTIALS_B64 }}
         run: |
           set -euo pipefail
           missing=""
-          for name in SSH_HOST SSH_PORT SSH_USER SSH_PRIVATE_KEY DEPLOY_PATH; do
+          for name in SSH_HOST SSH_PORT SSH_USER SSH_PRIVATE_KEY DEPLOY_PATH BOT_TOKEN GOOGLE_CREDENTIALS_B64; do
             value="${!name-}"
             [ -z "${value}" ] && missing="${missing} ${name}"
           done
@@ -107,8 +110,10 @@ jobs:
         with:
           ref: main
 
-      - name: Verify index.html exists
-        run: test -f index.html || { echo "::error::index.html no existe en la raiz del repo"; exit 1; }
+      - name: Verify files exist
+        run: |
+          test -f index.html || { echo "::error::index.html no existe en la raiz del repo"; exit 1; }
+          test -f api/index.php || { echo "::error::api/index.php no existe en el repo"; exit 1; }
 
       - name: Preparar SSH
         env:
@@ -142,6 +147,35 @@ jobs:
             -e "ssh -i ~/.ssh/id_deploy -p ${SSH_PORT}" \
             index.html "${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH}/index.html"
 
+      - name: Subir configuracion privada (fuera de public_html)
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          GOOGLE_CREDENTIALS_B64: ${{ secrets.GOOGLE_CREDENTIALS_B64 }}
+        run: |
+          set -euo pipefail
+          PRIV="${DEPLOY_PATH%%/domains/*}/capitalswaps-private"
+          umask 077
+          python3 -c 'import json,os; print(json.dumps({"bot_token": os.environ["BOT_TOKEN"].strip(), "google_credentials_b64": os.environ["GOOGLE_CREDENTIALS_B64"].strip()}))' > config.json
+          ssh -i ~/.ssh/id_deploy -p "${SSH_PORT}" "${SSH_USER}@${SSH_HOST}" "mkdir -p '${PRIV}/cache' && chmod 700 '${PRIV}' '${PRIV}/cache'"
+          rsync -z --chmod=F600 -e "ssh -i ~/.ssh/id_deploy -p ${SSH_PORT}" config.json "${SSH_USER}@${SSH_HOST}:${PRIV}/config.json"
+          rm -f config.json
+
+      - name: Subir API
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          rsync -rlvz --delete --no-owner --no-group --chmod=D755,F644 \
+            -e "ssh -i ~/.ssh/id_deploy -p ${SSH_PORT}" \
+            api/ "${SSH_USER}@${SSH_HOST}:${DEPLOY_PATH%/}/api/"
+
       - name: Verify deployed site
         run: |
           for i in 1 2 3; do
@@ -154,6 +188,17 @@ jobs:
             sleep 10
           done
           echo "::error::El sitio de produccion no respondio como se esperaba."
+          exit 1
+
+      - name: Verify API
+        run: |
+          for i in 1 2 3; do
+            body=$(curl -sS --max-time 30 "${SITE_URL}/api/health" || true)
+            if [ "$body" = '{"ok":true}' ]; then echo "OK: la API responde."; exit 0; fi
+            echo "Intento $i: respuesta '$body'; reintentando en 10s..."
+            sleep 10
+          done
+          echo "::error::La API no respondio en ${SITE_URL}/api/health"
           exit 1
 
       - name: Find linked issues
@@ -180,7 +225,7 @@ jobs:
 
       - name: Borrar la clave
         if: always()
-        run: rm -f ~/.ssh/id_deploy
+        run: rm -f ~/.ssh/id_deploy config.json
 
   notify-issues:
     name: Notify Linked Issues
