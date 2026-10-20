@@ -130,6 +130,26 @@
   .pasos li { display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 600; }
   .pasos b { width: 28px; height: 28px; flex-shrink: 0; border-radius: 50%; background: var(--amarillo); color: #141414; border: 2px solid var(--linea); display: flex; align-items: center; justify-content: center; font-size: 13px; }
 
+
+  /* ---------- historial ---------- */
+  .filtros { display: flex; gap: 8px; overflow-x: auto; margin: 16px -18px 0; padding: 0 18px 6px; scrollbar-width: none; }
+  .filtros::-webkit-scrollbar { display: none; }
+  .filtros button { flex-shrink: 0; height: 40px; padding: 0 14px; border-radius: 999px; border: 2px solid var(--linea); background: var(--superficie); font-size: 14px; font-weight: 700; }
+  .filtros button[aria-pressed="true"] { background: var(--texto); color: var(--fondo); }
+  .ops { list-style: none; padding: 0; margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .op { display: grid; grid-template-columns: 44px 1fr auto; gap: 4px 12px; align-items: center; padding: 14px; }
+  .op-icono { grid-row: span 2; width: 44px; height: 44px; border-radius: 14px; border: 2px solid var(--linea); display: flex; align-items: center; justify-content: center; color: #141414; }
+  .op-icono svg { width: 22px; height: 22px; }
+  .op-titulo { font-size: 15px; font-weight: 800; }
+  .op-monto { font-size: 16px; font-weight: 900; font-style: italic; text-align: right; white-space: nowrap; }
+  .op-detalle { font-size: 13px; color: var(--tenue); font-weight: 500; }
+  .op-pie { grid-column: 2 / 4; display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; color: var(--tenue); font-weight: 600; margin-top: 4px; }
+  .estado { font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 999px; border: 2px solid var(--linea); color: #141414; }
+  .estado.confirmado { background: var(--verde); }
+  .estado.pendiente { background: var(--amarillo); }
+  .estado.rechazado { background: var(--rojo); color: #fff; }
+  .vacio { text-align: center; padding: 40px 10px; color: var(--tenue); font-weight: 600; }
+
   /* ---------- navegación ---------- */
   nav {
     position: fixed; z-index: 10; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px));
@@ -273,6 +293,22 @@
     </div>
   </section>
 
+  <!-- HISTORIAL -->
+  <section id="v-historial" hidden>
+    <div class="vista-top">
+      <h1 class="titulo">Tu historial</h1>
+      <p class="tenue" style="font-size:15px;margin-top:4px">Tus últimas operaciones con Capital Swaps</p>
+      <div class="filtros" id="h-filtros" role="group" aria-label="Filtrar operaciones">
+        <button type="button" data-f="todo" aria-pressed="true">Todo</button>
+        <button type="button" data-f="compra">Compras</button>
+        <button type="button" data-f="venta">Ventas</button>
+        <button type="button" data-f="aporte" class="solo-socio">Aportes</button>
+        <button type="button" data-f="retiro" class="solo-socio">Retiros</button>
+      </div>
+      <ul class="ops" id="h-lista" aria-live="polite"></ul>
+    </div>
+  </section>
+
 </main>
 
 <nav id="nav" aria-label="Secciones" hidden>
@@ -284,6 +320,9 @@
   </button>
   <button type="button" data-ir="usdt">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg>USDT
+  </button>
+  <button type="button" data-ir="historial">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Historial
   </button>
 </nav>
 
@@ -310,7 +349,13 @@ const DEMO_DATA = {
         nivel_info: { id: "oro", nombre: "Oro", minimo: 6000000, ea: 0.2107 }, siguiente: null,
         niveles: [{ id: "oro", nombre: "Oro", minimo: 6000000, ea: 0.2107 }, { id: "plata", nombre: "Plata", minimo: 3000000, ea: 0.1822 }, { id: "bronce", nombre: "Bronce", minimo: 1500000, ea: 0.1544 }],
         tasa_ea: 0.2107, tasa_mensual: Math.pow(1.2107, 1 / 12) - 1 },
-  tasas: { compra: 3213, venta: 3101 }
+  tasas: { compra: 3213, venta: 3101 },
+  historial: { operaciones: [
+    { id: "SR00031", fecha: "2026-10-02 09:00:00", estado: "Pendiente", tipo: "retiro", cop: 500000, tasa: 3101, usdt: 161.24, capital_despues: 8487262 },
+    { id: "VT00030", fecha: "2026-10-01 10:00:00", estado: "Confirmado", tipo: "venta", usdt: 100, tasa: 3101, cop: 310100 },
+    { id: "SA00022", fecha: "2026-09-08 14:43:45", estado: "Confirmado", tipo: "aporte", cop: 300000, capital_despues: 8987262 },
+    { id: "CS00017", fecha: "2026-05-30 16:03:31", estado: "Rechazado", tipo: "compra", cop: 500000, tasa: 3680, usdt: 135.87 }
+  ] }
 };
 
 let ME = null, TASAS = null;
@@ -356,6 +401,7 @@ function pintarInicio() {
   if (!ME.es_socio) {
     $("saludo-sub").textContent = "Bienvenido a Capital Swaps";
     $("bloque-socio").hidden = true; $("bloque-cliente").hidden = false; $("nav-proyeccion").hidden = true;
+    document.querySelectorAll(".solo-socio").forEach(b => { b.hidden = true; });
     return;
   }
   const nivel = ME.nivel_info, sig = ME.siguiente;
@@ -458,12 +504,83 @@ $("u-monto").addEventListener("input", e => {
 document.querySelectorAll("#u-tabs button").forEach(b => b.addEventListener("click", () => { modo = b.dataset.modo; pintarUsdt(); }));
 document.querySelectorAll("#p-tabs button").forEach(b => b.addEventListener("click", () => { meses = Number(b.dataset.meses); pintarProyeccion(); }));
 
+
+// ===== Historial =====
+let OPS = null, filtro = "todo", cargandoHist = false;
+const ICONOS = {
+  compra: '<path d="M12 5v14M6 13l6 6 6-6"/>',
+  venta:  '<path d="M12 19V5M6 11l6-6 6 6"/>',
+  aporte: '<path d="M12 5v14M5 12h14"/>',
+  retiro: '<path d="M5 12h14"/>'
+};
+const FONDOS = { compra: "var(--amarillo)", venta: "#fff", aporte: "var(--verde)", retiro: "#fff" };
+const TITULOS = { compra: "Compra de USDT", venta: "Venta de USDT", aporte: "Aporte de capital", retiro: "Retiro de capital" };
+const usdtFmt = n => (n ?? 0).toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " USDT";
+function textosOp(o) {
+  const tasa = o.tasa ? " a " + cop.format(o.tasa) : "";
+  if (o.tipo === "compra") return ["+ " + usdtFmt(o.usdt), "Pagaste " + cop.format(o.cop || 0) + tasa];
+  if (o.tipo === "venta") return ["+ " + cop.format(o.cop || 0), "Vendiste " + usdtFmt(o.usdt) + tasa];
+  if (o.tipo === "aporte") return ["+ " + cop.format(o.cop || 0), "Capital después: " + cop.format(o.capital_despues || 0)];
+  return ["− " + cop.format(o.cop || 0), o.usdt ? "Equivale a " + usdtFmt(o.usdt) + tasa : "Capital después: " + cop.format(o.capital_despues || 0)];
+}
+function fechaCorta(f) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{1,2}):(\d{2}))?/.exec(f || "");
+  if (!m) return f || "";
+  const MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  return (+m[3]) + " " + MES[+m[2] - 1] + " " + m[1] + (m[4] ? ", " + (+m[4]) + ":" + m[5] : "");
+}
+function pintarHistorial() {
+  const ul = $("h-lista");
+  document.querySelectorAll("#h-filtros button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.f === filtro)));
+  ul.innerHTML = "";
+  if (OPS === null) { ul.innerHTML = '<li class="vacio">Cargando tus operaciones…</li>'; return; }
+  const lista = OPS.filter(o => filtro === "todo" || o.tipo === filtro);
+  if (!lista.length) { ul.innerHTML = '<li class="vacio">' + (filtro === "todo" ? "Aún no tienes operaciones registradas." : "No tienes operaciones de este tipo.") + "</li>"; return; }
+  lista.forEach(o => {
+    const [monto, detalle] = textosOp(o);
+    const li = document.createElement("li");
+    li.className = "op tarjeta";
+    li.innerHTML =
+      '<span class="op-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' + ICONOS[o.tipo] + "</svg></span>" +
+      '<span class="op-titulo"></span><span class="op-monto"></span>' +
+      '<span class="op-detalle" style="grid-column:2/4"></span>' +
+      '<div class="op-pie"><span></span><span class="estado"></span></div>';
+    li.querySelector(".op-icono").style.background = FONDOS[o.tipo];
+    li.querySelector(".op-titulo").textContent = TITULOS[o.tipo];
+    li.querySelector(".op-monto").textContent = monto;
+    li.querySelector(".op-detalle").textContent = detalle;
+    li.querySelector(".op-pie span").innerHTML = "<span></span><br><span></span>";
+    li.querySelector(".op-pie span span").textContent = fechaCorta(o.fecha);
+    li.querySelector(".op-pie span span:last-child").textContent = o.id;
+    const est = li.querySelector(".estado"), e = (o.estado || "").toLowerCase();
+    est.textContent = o.estado;
+    est.classList.add(e.startsWith("conf") ? "confirmado" : e.startsWith("rech") ? "rechazado" : "pendiente");
+    ul.appendChild(li);
+  });
+}
+async function cargarHistorial() {
+  if (OPS !== null || cargandoHist) { pintarHistorial(); return; }
+  cargandoHist = true; pintarHistorial();
+  try {
+    const r = await pedir("/historial");
+    OPS = r.operaciones || [];
+  } catch (e) {
+    $("h-lista").innerHTML = '<li class="vacio">No se pudo cargar tu historial.<br><button class="boton" type="button" id="h-reintentar" style="width:auto;margin:14px auto 0">Reintentar</button></li>';
+    $("h-reintentar").addEventListener("click", () => { cargandoHist = false; cargarHistorial(); });
+    cargandoHist = false;
+    return;
+  }
+  cargandoHist = false; pintarHistorial();
+}
+document.querySelectorAll("#h-filtros button").forEach(b => b.addEventListener("click", () => { filtro = b.dataset.f; pintarHistorial(); }));
+
 // ===== Navegación y acciones =====
 function ir(vista) {
-  ["inicio", "proyeccion", "usdt"].forEach(v => { $("v-" + v).hidden = v !== vista; });
+  ["inicio", "proyeccion", "usdt", "historial"].forEach(v => { $("v-" + v).hidden = v !== vista; });
   document.querySelectorAll("nav button").forEach(b => b.removeAttribute("aria-current"));
   document.querySelector('nav button[data-ir="' + vista + '"]').setAttribute("aria-current", "page");
   window.scrollTo(0, 0);
+  if (vista === "historial") cargarHistorial();
   if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
 }
 document.querySelectorAll("[data-ir]").forEach(b => b.addEventListener("click", () => ir(b.dataset.ir)));
