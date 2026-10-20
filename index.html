@@ -131,6 +131,22 @@
   .pasos b { width: 28px; height: 28px; flex-shrink: 0; border-radius: 50%; background: var(--amarillo); color: #141414; border: 2px solid var(--linea); display: flex; align-items: center; justify-content: center; font-size: 13px; }
 
 
+
+  /* ---------- mercado ---------- */
+  .seccion { font-size: 19px; font-weight: 900; font-style: italic; margin-top: 30px; }
+  .monedas { list-style: none; padding: 0; margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .moneda { display: grid; grid-template-columns: 44px minmax(0, 1fr) 60px auto; gap: 2px 12px; align-items: center; padding: 14px; }
+  .moneda-icono { grid-row: span 2; width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--linea); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900; color: #fff; }
+  .moneda-nombre { font-size: 15px; font-weight: 800; }
+  .moneda-sim { font-size: 12px; font-weight: 600; color: var(--tenue); }
+  .moneda svg { grid-row: span 2; width: 60px; height: 30px; overflow: visible; }
+  .moneda-usd { font-size: 15px; font-weight: 900; font-style: italic; text-align: right; white-space: nowrap; }
+  .moneda-pie { display: flex; justify-content: flex-end; }
+  .cambio { font-size: 11px; font-weight: 800; padding: 3px 7px; border-radius: 999px; border: 2px solid var(--linea); white-space: nowrap; }
+  .cambio.sube { background: var(--verde); color: #141414; }
+  .cambio.baja { background: var(--rojo); color: #fff; }
+  .moneda-cop { grid-column: 1 / -1; font-size: 13px; font-weight: 600; color: var(--tenue); margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--pista); }
+
   /* ---------- historial ---------- */
   .filtros { display: flex; gap: 8px; overflow-x: auto; margin: 16px -18px 0; padding: 0 18px 6px; scrollbar-width: none; }
   .filtros::-webkit-scrollbar { display: none; }
@@ -290,6 +306,10 @@
       </div>
       <ol class="pasos" id="u-pasos"></ol>
       <button class="boton" type="button" id="u-cta" style="margin-top:18px">Comprar USDT</button>
+
+      <h2 class="seccion">Precios del mercado</h2>
+      <ul class="monedas" id="m-lista" aria-live="polite"><li class="vacio">Cargando precios…</li></ul>
+      <p class="nota" id="m-nota"></p>
     </div>
   </section>
 
@@ -350,6 +370,11 @@ const DEMO_DATA = {
         niveles: [{ id: "oro", nombre: "Oro", minimo: 6000000, ea: 0.2107 }, { id: "plata", nombre: "Plata", minimo: 3000000, ea: 0.1822 }, { id: "bronce", nombre: "Bronce", minimo: 1500000, ea: 0.1544 }],
         tasa_ea: 0.2107, tasa_mensual: Math.pow(1.2107, 1 / 12) - 1 },
   tasas: { compra: 3213, venta: 3101 },
+  precios: { actualizado: Math.floor(Date.now() / 1000), monedas: [
+    { id: "usd-cop", simbolo: "USD/COP", nombre: "Dólar", usd: null, cop: 3945.6, cambio_24h: 0.42, serie_7d: Array.from({ length: 42 }, (_, i) => 3900 + i * 1.1 + Math.sin(i / 2.5) * 12) },
+    { id: "bitcoin", simbolo: "BTC", nombre: "Bitcoin", usd: 67890.12, cop: 210450000, cambio_24h: 2.35, serie_7d: Array.from({ length: 42 }, (_, i) => 65000 + i * 60 + Math.sin(i / 3) * 700) },
+    { id: "ethereum", simbolo: "ETH", nombre: "Ethereum", usd: 2510.4, cop: 7781000, cambio_24h: -1.2, serie_7d: Array.from({ length: 42 }, (_, i) => 2600 - i * 3 + Math.cos(i / 4) * 40) }
+  ] },
   historial: { operaciones: [
     { id: "SR00031", fecha: "2026-10-02 09:00:00", estado: "Pendiente", tipo: "retiro", cop: 500000, tasa: 3101, usdt: 161.24, capital_despues: 8487262 },
     { id: "VT00030", fecha: "2026-10-01 10:00:00", estado: "Confirmado", tipo: "venta", usdt: 100, tasa: 3101, cop: 310100 },
@@ -505,6 +530,53 @@ document.querySelectorAll("#u-tabs button").forEach(b => b.addEventListener("cli
 document.querySelectorAll("#p-tabs button").forEach(b => b.addEventListener("click", () => { meses = Number(b.dataset.meses); pintarProyeccion(); }));
 
 
+
+// ===== Precios del mercado =====
+const MONEDA_ESTILO = { "usd-cop": ["$", "#00BF63"], bitcoin: ["₿", "#F7931A"], ethereum: ["Ξ", "#627EEA"] };
+let PRECIOS = null, cargandoPrecios = false, precioHora = 0;
+function linea(serie, sube) {
+  if (!serie || serie.length < 2) return "";
+  const W = 60, H = 30, min = Math.min(...serie), max = Math.max(...serie), r = (max - min) || 1;
+  const pts = serie.map((v, i) => (i / (serie.length - 1) * W).toFixed(1) + "," + (H - 3 - (v - min) / r * (H - 6)).toFixed(1)).join(" ");
+  const color = sube ? "var(--verde-texto)" : "var(--rojo)";
+  return '<svg viewBox="0 0 60 30" role="img" aria-label="Precio de los últimos 7 días, ' + (sube ? "al alza" : "a la baja") + '"><polyline points="' + pts + '" fill="none" stroke="' + color + '" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+}
+function pintarPrecios(error) {
+  const ul = $("m-lista");
+  if (error && !PRECIOS) { ul.innerHTML = '<li class="vacio">No se pudieron cargar los precios.</li>'; return; }
+  if (!PRECIOS) return;
+  ul.innerHTML = "";
+  PRECIOS.monedas.forEach(m => {
+    const sube = (m.cambio_24h ?? 0) >= 0, [simb, color] = MONEDA_ESTILO[m.id] || [m.simbolo[0], "#141414"];
+    const li = document.createElement("li");
+    li.className = "moneda tarjeta";
+    li.innerHTML =
+      '<span class="moneda-icono" aria-hidden="true"></span>' +
+      '<span class="moneda-nombre"></span>' + linea(m.serie_7d, sube) + '<span class="moneda-usd"></span>' +
+      '<span class="moneda-sim"></span><span class="moneda-pie"><span class="cambio"></span></span>' +
+      '<span class="moneda-cop"></span>';
+    const ic = li.querySelector(".moneda-icono"); ic.textContent = simb; ic.style.background = color;
+    if (m.id === "usd-cop") ic.style.color = "#141414";
+    li.querySelector(".moneda-nombre").textContent = m.nombre;
+    li.querySelector(".moneda-sim").textContent = m.simbolo;
+    li.querySelector(".moneda-usd").textContent = m.id === "usd-cop" ? (m.cop != null ? cop.format(m.cop) : "—") : m.usd != null ? "US$ " + m.usd.toLocaleString("es-CO", { maximumFractionDigits: m.usd >= 1000 ? 0 : 2 }) : "—";
+    const ch = li.querySelector(".cambio");
+    ch.textContent = m.cambio_24h == null ? "—" : (sube ? "▲ " : "▼ ") + Math.abs(m.cambio_24h).toLocaleString("es-CO", { maximumFractionDigits: 2 }) + " % 24 h";
+    ch.classList.add(sube ? "sube" : "baja");
+    li.querySelector(".moneda-cop").textContent = m.id === "usd-cop" ? "Precio del USDT en pesos, referencia del dólar" : (m.cop != null ? "En pesos: " + cop.format(m.cop) : "");
+    ul.appendChild(li);
+  });
+  const t = new Date(PRECIOS.actualizado * 1000);
+  $("m-nota").textContent = "Fuente: CoinGecko. La gráfica muestra los últimos 7 días. Actualizado: " + t.toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit" });
+}
+async function cargarPrecios() {
+  if (cargandoPrecios || (PRECIOS && Date.now() - precioHora < 120000)) return;
+  cargandoPrecios = true;
+  try { PRECIOS = await pedir("/precios"); precioHora = Date.now(); pintarPrecios(); }
+  catch (e) { pintarPrecios(true); }
+  cargandoPrecios = false;
+}
+
 // ===== Historial =====
 let OPS = null, filtro = "todo", cargandoHist = false;
 const ICONOS = {
@@ -581,6 +653,7 @@ function ir(vista) {
   document.querySelector('nav button[data-ir="' + vista + '"]').setAttribute("aria-current", "page");
   window.scrollTo(0, 0);
   if (vista === "historial") cargarHistorial();
+  if (vista === "usdt") cargarPrecios();
   if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
 }
 document.querySelectorAll("[data-ir]").forEach(b => b.addEventListener("click", () => ir(b.dataset.ir)));
