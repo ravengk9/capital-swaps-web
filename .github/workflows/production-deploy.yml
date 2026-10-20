@@ -95,7 +95,7 @@ jobs:
             *) echo "::error::DEPLOY_PATH debe ser una ruta absoluta (empezar por /)."; exit 1 ;;
           esac
           case "${DEPLOY_PATH%/}" in
-            */public_html/*) ;;
+            */public_html|*/public_html/*) ;;
             *)
               echo "::error::DEPLOY_PATH debe ubicarse dentro de public_html para evitar tocar otras carpetas del servidor."
               exit 1 ;;
