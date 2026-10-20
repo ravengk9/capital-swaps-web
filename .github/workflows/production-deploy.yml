@@ -193,12 +193,14 @@ jobs:
       - name: Verify API
         run: |
           for i in 1 2 3; do
-            body=$(curl -sS --max-time 30 "${SITE_URL}/api/health" || true)
+            body=$(curl -sS --max-time 30 "${SITE_URL}/api/index.php/health" || true)
             if [ "$body" = '{"ok":true}' ]; then echo "OK: la API responde."; exit 0; fi
-            echo "Intento $i: respuesta '$body'; reintentando en 10s..."
+            echo "Intento $i: respuesta inesperada (primeros 300 caracteres):"
+            printf '%s\n' "$body" | head -c 300; echo
+            echo "Reintentando en 10s..."
             sleep 10
           done
-          echo "::error::La API no respondio en ${SITE_URL}/api/health"
+          echo "::error::La API no respondio en ${SITE_URL}/api/index.php/health"
           exit 1
 
       - name: Find linked issues

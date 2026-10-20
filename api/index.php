@@ -30,7 +30,10 @@ require __DIR__ . '/lib/auth.php';
 require __DIR__ . '/lib/sheets.php';
 require __DIR__ . '/lib/precios.php';
 
-$ruta = '/' . trim(preg_replace('#^.*?/api#', '', parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/'), '/');
+// Funciona como /api/me (con .htaccess) o como /api/index.php/me (sin él)
+$ruta = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+$ruta = preg_replace('#^.*?/api(/index\.php)?#', '', $ruta);
+$ruta = '/' . trim($ruta, '/');
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') responder(405, ['detail' => 'Método no permitido']);
 
 if ($ruta === '/health') responder(200, ['ok' => true]);
