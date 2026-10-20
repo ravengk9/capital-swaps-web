@@ -21,6 +21,8 @@
     --tenue: #5E5A52;
     --pista: #ECE6D8;
     --linea: #141414;
+    --arriba: calc(var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px)) + var(--tg-content-safe-area-inset-top, 0px));
+    --franja: var(--fondo);
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
@@ -53,6 +55,10 @@
   .chip { display: inline-block; font-size: 12px; font-weight: 700; padding: 5px 9px; border-radius: 999px; border: 2px solid var(--linea); color: #141414; }
   .tenue { color: var(--tenue); }
 
+  /* franja fija arriba: el contenido no se mezcla con la barra del celular ni con los botones de Telegram */
+  body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: var(--arriba); background: var(--franja); z-index: 20; pointer-events: none; }
+  body.en-inicio { --franja: var(--rojo); }
+
   /* ---------- carga ---------- */
   #carga {
     position: fixed; inset: 0; z-index: 50; background: var(--rojo);
@@ -76,7 +82,7 @@
   .boton:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--linea); }
 
   /* ---------- inicio ---------- */
-  .cabecera { background: var(--rojo); padding: calc(20px + env(safe-area-inset-top, 0px)) 20px 92px; border-radius: 0 0 32px 32px; display: flex; flex-direction: column; gap: 16px; }
+  .cabecera { background: var(--rojo); padding: calc(20px + var(--arriba)) 20px 92px; border-radius: 0 0 32px 32px; display: flex; flex-direction: column; gap: 16px; }
   .cabecera img { width: 200px; }
   .cabecera p { font-size: 15px; font-weight: 500; color: #fff; }
   .cabecera h1 { font-size: 30px; color: #fff; text-shadow: 3px 3px 0 #141414; margin-top: 2px; }
@@ -98,7 +104,7 @@
   .tu-nivel { font-size: 11px; font-weight: 700; color: #fff; background: #141414; padding: 2px 8px; border-radius: 999px; }
 
   /* ---------- proyección y usdt ---------- */
-  .vista-top { padding: calc(22px + env(safe-area-inset-top, 0px)) 18px 0; }
+  .vista-top { padding: calc(22px + var(--arriba)) 18px 0; }
   .vista-top h1 { font-size: 30px; margin-top: 4px; }
   .pestanas { display: grid; gap: 8px; margin-top: 16px; }
   .pestanas button { height: 46px; border-radius: 16px; border: 2.5px solid var(--linea); background: var(--superficie); font-size: 15px; font-weight: 800; font-style: italic; }
@@ -348,7 +354,7 @@
 
 <script>
 // ===== Configuración =====
-const API = "https://web-production-5af5a.up.railway.app";
+const API = "/api";   // la API vive en el mismo dominio (app.capitalswaps.com/api)
 // Usuario del bot sin @. Los botones de acción abren el chat con /start aportar|retirar|comprar|vender.
 const BOT_USERNAME = "CapitalSwaps_Prices_bot";
 
@@ -649,12 +655,14 @@ document.querySelectorAll("#h-filtros button").forEach(b => b.addEventListener("
 // ===== Navegación y acciones =====
 function ir(vista) {
   ["inicio", "proyeccion", "usdt", "historial"].forEach(v => { $("v-" + v).hidden = v !== vista; });
+  document.body.classList.toggle("en-inicio", vista === "inicio");
   document.querySelectorAll("nav button").forEach(b => b.removeAttribute("aria-current"));
   document.querySelector('nav button[data-ir="' + vista + '"]').setAttribute("aria-current", "page");
   window.scrollTo(0, 0);
   if (vista === "historial") cargarHistorial();
   if (vista === "usdt") cargarPrecios();
   if (tg && tg.HapticFeedback) tg.HapticFeedback.selectionChanged();
+  pintarBarraTg(vista === "inicio");
 }
 document.querySelectorAll("[data-ir]").forEach(b => b.addEventListener("click", () => ir(b.dataset.ir)));
 
@@ -664,6 +672,12 @@ function abrirBot(accion) {
 }
 document.querySelectorAll("[data-accion]").forEach(b => b.addEventListener("click", () => abrirBot(b.dataset.accion)));
 $("u-cta").addEventListener("click", () => abrirBot(modo));
+
+function pintarBarraTg(rojo) {
+  if (!tg || !tg.isVersionAtLeast || !tg.isVersionAtLeast("6.9")) return;
+  const fondo = getComputedStyle(document.documentElement).getPropertyValue("--fondo").trim() || "#FBF6EC";
+  try { tg.setHeaderColor(rojo ? "#E7191F" : fondo); } catch (e) {}
+}
 
 // ===== Arranque =====
 async function cargar() {
@@ -676,7 +690,7 @@ async function cargar() {
     const pTasas = pedir("/tasas").catch(() => null).then(r => { avanzar(objetivo + 25); return r; });
     [ME, TASAS] = await Promise.all([pMe, pTasas]);
     pintarInicio(); pintarProyeccion(); pintarUsdt();
-    $("app").hidden = false; $("nav").hidden = false;
+    $("app").hidden = false; $("nav").hidden = false; document.body.classList.add("en-inicio");
     avanzar(100, "¡Listo!");
     await terminarCarga();
   } catch (e) {
