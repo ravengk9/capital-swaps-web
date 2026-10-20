@@ -97,14 +97,11 @@ function buscar_socio($tg_id) {
 
 /* ---------- tasas de compra / venta (hoja config, B1 y B2) ---------- */
 function leer_tasas() {
+    // Si la lectura falla, se devuelve la última tasa leída bien (no se guarda "sin tasa").
     return cache_get('tasas', 60, function () {
-        try {
-            $v = rellenar(sheets_leer(["'config'!B1:B2"])[0], 1, 2);
-        } catch (RuntimeException $e) {
-            return ['compra' => null, 'venta' => null];
-        }
+        $v = rellenar(sheets_leer(["'config'!B1:B2"])[0], 1, 2);
         return ['compra' => parse_number($v[0][0]), 'venta' => parse_number($v[1][0])];
-    });
+    }, true);
 }
 
 /* ---------- historial (hoja "operaciones bot telegram") ----------
