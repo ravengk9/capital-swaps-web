@@ -7,7 +7,7 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,400;0,500;0,600;0,700;0,800;1,700;1,800;1,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,400;0,500;0,600;0,700;0,800;1,700;1,800;1,900&family=Butcherman&display=swap" rel="stylesheet">
 <style>
   :root {
     --rojo: #E7191F;
@@ -180,13 +180,13 @@
   .hw { display: none; pointer-events: none; }
   body.halloween .hw { display: block; }
   .murcielagos { position: absolute; inset: 0; overflow: hidden; }
-  .murcielago { position: absolute; width: 34px; fill: #141414; animation: aletear 3.2s ease-in-out infinite; }
-  .murcielago:nth-child(2) { width: 24px; animation-duration: 2.6s; animation-delay: -.8s; }
-  .murcielago:nth-child(3) { width: 18px; animation-duration: 3.8s; animation-delay: -1.6s; }
+  .murcielago { position: absolute; width: 58px; fill: #141414; animation: aletear 3.2s ease-in-out infinite; }
+  .murcielago:nth-child(2) { width: 44px; animation-duration: 2.6s; animation-delay: -.8s; }
+  .murcielago:nth-child(3) { width: 32px; animation-duration: 3.8s; animation-delay: -1.6s; }
   @keyframes aletear { 0%, 100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-9px) rotate(6deg); } }
-  #carga .vuelo { position: absolute; width: 46px; fill: #141414; left: -60px; animation: cruzar 6s linear infinite; }
-  #carga .vuelo:nth-of-type(2) { width: 30px; animation-duration: 8s; animation-delay: -3s; }
-  #carga .vuelo:nth-of-type(3) { width: 22px; animation-duration: 7s; animation-delay: -5s; }
+  #carga .vuelo { position: absolute; width: 84px; fill: #141414; left: -100px; animation: cruzar 6s linear infinite; }
+  #carga .vuelo:nth-of-type(2) { width: 60px; animation-duration: 8s; animation-delay: -3s; }
+  #carga .vuelo:nth-of-type(3) { width: 44px; animation-duration: 7s; animation-delay: -5s; }
   @keyframes cruzar { 0% { transform: translate(0, 0) rotate(-4deg); } 25% { transform: translate(28vw, -14px) rotate(4deg); } 50% { transform: translate(56vw, 6px) rotate(-4deg); } 75% { transform: translate(84vw, -10px) rotate(4deg); } 100% { transform: translate(115vw, 0) rotate(-4deg); } }
   .telarana { position: absolute; top: var(--arriba); right: 0; width: 110px; height: 110px; }
   .cabecera { position: relative; overflow: hidden; }
@@ -194,7 +194,29 @@
   .halloween-saludo { margin: 14px 18px 0; padding: 12px 14px; align-items: center; gap: 12px; }
   body.halloween .halloween-saludo { display: flex; }
   .halloween-saludo svg { width: 46px; height: 46px; flex-shrink: 0; }
-  @media (prefers-reduced-motion: reduce) { .murcielago, #carga .vuelo { animation: none; } #carga .vuelo { left: auto; } }
+  #carga .luna { position: absolute; top: calc(var(--arriba) + 18px); left: 18px; width: 96px; filter: drop-shadow(0 0 18px rgba(255, 244, 200, .75)) drop-shadow(0 0 40px rgba(255, 236, 170, .35)); }
+
+  /* Halloween: logo de vampiro, cabecera negra, fondo rojo en Inicio, carga en negro */
+  body.halloween img.logo { display: none; }
+  #carga .logo-hw { width: min(330px, 84vw); position: relative; }
+  .cabecera .logo-hw { width: 220px; margin: -10px 0 -14px -8px; }
+  body.halloween #carga { background: #141414; }
+  body.halloween .cabecera { background: #141414; }
+  body.halloween.en-inicio { --franja: #141414; }
+  body.halloween.en-inicio, body.halloween.en-inicio .app { background: var(--rojo); }
+  html:has(body.halloween.en-inicio) { background: var(--rojo); }
+  body.halloween .murcielago, body.halloween #carga .vuelo { fill: #B3121A; }
+  .arana { animation: colgar 3.4s ease-in-out infinite; transform-box: view-box; }
+  @keyframes colgar { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(14px); } }
+  /* rayo: 2 destellos cada 4,5 s (bajo el límite de 3 por segundo); desactivado con "reducir movimiento" */
+  #carga .destello { position: absolute; inset: 0; background: #fff; opacity: 0; animation: destello 4.5s infinite; }
+  @keyframes destello { 0%, 60% { opacity: 0; } 61% { opacity: .85; } 63.5% { opacity: .08; } 66% { opacity: .65; } 71%, 100% { opacity: 0; } }
+  #carga .rayo { position: absolute; top: calc(var(--arriba) + 8px); left: 62%; width: 88px; opacity: 0; filter: drop-shadow(0 0 14px #fff) drop-shadow(0 0 30px #FFE9A8); animation: rayo 4.5s infinite; }
+  @keyframes rayo { 0%, 60% { opacity: 0; transform: scaleY(.6); transform-origin: top; } 61% { opacity: 1; transform: scaleY(1); } 66% { opacity: 1; } 72%, 100% { opacity: 0; transform: scaleY(1); } }
+  body.halloween #carga .logo-hw { animation: sacudida 4.5s infinite; }
+  @keyframes sacudida { 0%, 60%, 72%, 100% { transform: none; } 62% { transform: translate(-4px, 2px) rotate(-1deg); } 64% { transform: translate(4px, -2px) rotate(1deg); } 66% { transform: translate(-2px, 1px); } 68% { transform: translate(2px, 0); } }
+  @media (prefers-reduced-motion: reduce) { #carga .destello, #carga .rayo { display: none; } body.halloween #carga .logo-hw { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .murcielago, #carga .vuelo, .arana { animation: none; } #carga .vuelo { left: auto; } }
 
   /* ---------- navegación ---------- */
   nav {
@@ -210,8 +232,18 @@
 <body>
 
 <div id="carga" role="status" aria-live="polite">
-  <div class="hw" style="position:absolute;inset:0;overflow:hidden" aria-hidden="true"><svg class="vuelo" style="top:22%" viewBox="0 0 48 26" aria-hidden="true"><path d="M24 9c-1.2-3-1-5.6.2-7.6.8 1.4 1.6 2.4 2.6 2.6 1-.2 1.8-1.2 2.6-2.6 1.2 2 1.4 4.6.2 7.6 3.2-4.6 9.6-7.4 18.4-6.8-4.2 2.2-5.6 5.4-5 9.2-3.2-1.8-6.6-1-8.4 2.4-1.8-2.4-4.6-2.8-7.2-1.2-.4 3-1.4 6-3.4 9.8-2-3.8-3-6.8-3.4-9.8-2.6-1.6-5.4-1.2-7.2 1.2-1.8-3.4-5.2-4.2-8.4-2.4.6-3.8-.8-7-5-9.2 8.8-.6 15.2 2.2 18.4 6.8z" transform="translate(-3 0)"/></svg><svg class="vuelo" style="top:30%" viewBox="0 0 48 26" aria-hidden="true"><path d="M24 9c-1.2-3-1-5.6.2-7.6.8 1.4 1.6 2.4 2.6 2.6 1-.2 1.8-1.2 2.6-2.6 1.2 2 1.4 4.6.2 7.6 3.2-4.6 9.6-7.4 18.4-6.8-4.2 2.2-5.6 5.4-5 9.2-3.2-1.8-6.6-1-8.4 2.4-1.8-2.4-4.6-2.8-7.2-1.2-.4 3-1.4 6-3.4 9.8-2-3.8-3-6.8-3.4-9.8-2.6-1.6-5.4-1.2-7.2 1.2-1.8-3.4-5.2-4.2-8.4-2.4.6-3.8-.8-7-5-9.2 8.8-.6 15.2 2.2 18.4 6.8z" transform="translate(-3 0)"/></svg><svg class="vuelo" style="top:72%" viewBox="0 0 48 26" aria-hidden="true"><path d="M24 9c-1.2-3-1-5.6.2-7.6.8 1.4 1.6 2.4 2.6 2.6 1-.2 1.8-1.2 2.6-2.6 1.2 2 1.4 4.6.2 7.6 3.2-4.6 9.6-7.4 18.4-6.8-4.2 2.2-5.6 5.4-5 9.2-3.2-1.8-6.6-1-8.4 2.4-1.8-2.4-4.6-2.8-7.2-1.2-.4 3-1.4 6-3.4 9.8-2-3.8-3-6.8-3.4-9.8-2.6-1.6-5.4-1.2-7.2 1.2-1.8-3.4-5.2-4.2-8.4-2.4.6-3.8-.8-7-5-9.2 8.8-.6 15.2 2.2 18.4 6.8z" transform="translate(-3 0)"/></svg></div>
-  <img class="logo" alt="Capital Swaps">
+  <div class="hw" style="position:absolute;inset:0;overflow:hidden" aria-hidden="true">
+    <svg class="luna" viewBox="0 0 100 100" aria-hidden="true">
+      <circle cx="50" cy="50" r="46" fill="#FFF3C4"/>
+      <circle cx="34" cy="36" r="9" fill="#EADBA0" opacity=".7"/>
+      <circle cx="62" cy="58" r="13" fill="#EADBA0" opacity=".6"/>
+      <circle cx="40" cy="68" r="6" fill="#EADBA0" opacity=".7"/>
+      <circle cx="66" cy="30" r="5" fill="#EADBA0" opacity=".6"/>
+    </svg>
+    <svg class="vuelo" style="top:22%" viewBox="0 0 48 26" aria-hidden="true"><path d="M24 9c-1.2-3-1-5.6.2-7.6.8 1.4 1.6 2.4 2.6 2.6 1-.2 1.8-1.2 2.6-2.6 1.2 2 1.4 4.6.2 7.6 3.2-4.6 9.6-7.4 18.4-6.8-4.2 2.2-5.6 5.4-5 9.2-3.2-1.8-6.6-1-8.4 2.4-1.8-2.4-4.6-2.8-7.2-1.2-.4 3-1.4 6-3.4 9.8-2-3.8-3-6.8-3.4-9.8-2.6-1.6-5.4-1.2-7.2 1.2-1.8-3.4-5.2-4.2-8.4-2.4.6-3.8-.8-7-5-9.2 8.8-.6 15.2 2.2 18.4 6.8z" transform="translate(-3 0)"/></svg><svg class="vuelo" style="top:30%" viewBox="0 0 48 26" aria-hidden="true"><path d="M24 9c-1.2-3-1-5.6.2-7.6.8 1.4 1.6 2.4 2.6 2.6 1-.2 1.8-1.2 2.6-2.6 1.2 2 1.4 4.6.2 7.6 3.2-4.6 9.6-7.4 18.4-6.8-4.2 2.2-5.6 5.4-5 9.2-3.2-1.8-6.6-1-8.4 2.4-1.8-2.4-4.6-2.8-7.2-1.2-.4 3-1.4 6-3.4 9.8-2-3.8-3-6.8-3.4-9.8-2.6-1.6-5.4-1.2-7.2 1.2-1.8-3.4-5.2-4.2-8.4-2.4.6-3.8-.8-7-5-9.2 8.8-.6 15.2 2.2 18.4 6.8z" transform="translate(-3 0)"/></svg><svg class="vuelo" style="top:72%" viewBox="0 0 48 26" aria-hidden="true"><path d="M24 9c-1.2-3-1-5.6.2-7.6.8 1.4 1.6 2.4 2.6 2.6 1-.2 1.8-1.2 2.6-2.6 1.2 2 1.4 4.6.2 7.6 3.2-4.6 9.6-7.4 18.4-6.8-4.2 2.2-5.6 5.4-5 9.2-3.2-1.8-6.6-1-8.4 2.4-1.8-2.4-4.6-2.8-7.2-1.2-.4 3-1.4 6-3.4 9.8-2-3.8-3-6.8-3.4-9.8-2.6-1.6-5.4-1.2-7.2 1.2-1.8-3.4-5.2-4.2-8.4-2.4.6-3.8-.8-7-5-9.2 8.8-.6 15.2 2.2 18.4 6.8z" transform="translate(-3 0)"/></svg><div class="destello"></div>
+    <svg class="rayo" viewBox="0 0 60 150" aria-hidden="true"><path d="M34 0 L10 70 L28 72 L14 150 L52 52 L33 50 L48 0 Z" fill="#FFF6C9"/></svg>
+  </div>
+  <img class="logo" alt="Capital Swaps"><svg class="hw logo-hw" viewBox="0 0 400 290" role="img" aria-label="Capital Swaps"><g transform="rotate(-5 200 200)"><g transform="translate(6 178)"><path d="M0 22 L46 6 L152 3 L160 9 L156 16 L162 24 L156 33 L160 38 L152 42 L46 38 Z" fill="#6B4022" stroke="#141414" stroke-width="4" stroke-linejoin="round"/><path d="M58 14 L146 12 M64 22 L150 22 M58 30 L140 32" stroke="#432611" stroke-width="2.4" stroke-linecap="round" fill="none"/><path d="M0 22 L30 11.5 L34 18 L28 26 L34 31 L30 33.5 Z" fill="#B3121A"/><path d="M24 34 q1 7 3 9 q2 -3 1 -9 Z" fill="#B3121A"/></g><g transform="translate(394 178) scale(-1,1)"><path d="M0 22 L46 6 L152 3 L160 9 L156 16 L162 24 L156 33 L160 38 L152 42 L46 38 Z" fill="#6B4022" stroke="#141414" stroke-width="4" stroke-linejoin="round"/><path d="M58 14 L146 12 M64 22 L150 22 M58 30 L140 32" stroke="#432611" stroke-width="2.4" stroke-linecap="round" fill="none"/><path d="M0 22 L30 11.5 L34 18 L28 26 L34 31 L30 33.5 Z" fill="#B3121A"/><path d="M24 34 q1 7 3 9 q2 -3 1 -9 Z" fill="#B3121A"/></g></g><g transform="rotate(-4 200 110) skewX(-8)"><text x="52" y="135" font-family="Butcherman, Impact, sans-serif" font-size="82" textLength="330" lengthAdjust="spacingAndGlyphs" fill="#00BF63" stroke="#00BF63" stroke-width="12" stroke-linejoin="round" paint-order="stroke" >CAPITAL</text><text x="46" y="128" font-family="Butcherman, Impact, sans-serif" font-size="82" textLength="330" lengthAdjust="spacingAndGlyphs" fill="#141414" stroke="#E7191F" stroke-width="9" stroke-linejoin="round" paint-order="stroke" >CAPITAL</text></g><g transform="rotate(-7 200 200) skewX(-10)"><text x="114" y="233" font-family="Butcherman, Impact, sans-serif" font-size="80" textLength="250" lengthAdjust="spacingAndGlyphs" fill="#00BF63" stroke="#00BF63" stroke-width="12" stroke-linejoin="round" paint-order="stroke" >SWAPS</text><text x="108" y="226" font-family="Butcherman, Impact, sans-serif" font-size="80" textLength="250" lengthAdjust="spacingAndGlyphs" fill="#E7191F" stroke="#141414" stroke-width="9" stroke-linejoin="round" paint-order="stroke" >SWAPS</text></g></svg>
   <div class="carga-info" id="carga-info">
     <p id="carga-pct">0 %</p>
     <div class="carga-pista"><div id="carga-barra"></div></div>
@@ -228,16 +260,24 @@
   <!-- INICIO -->
   <section id="v-inicio">
     <header class="cabecera">
-      <div class="hw murcielagos"><svg class="murcielago" style="top:calc(var(--arriba) + 18px);right:120px" viewBox="0 0 48 26" aria-hidden="true"><path d="M24 9c-1.2-3-1-5.6.2-7.6.8 1.4 1.6 2.4 2.6 2.6 1-.2 1.8-1.2 2.6-2.6 1.2 2 1.4 4.6.2 7.6 3.2-4.6 9.6-7.4 18.4-6.8-4.2 2.2-5.6 5.4-5 9.2-3.2-1.8-6.6-1-8.4 2.4-1.8-2.4-4.6-2.8-7.2-1.2-.4 3-1.4 6-3.4 9.8-2-3.8-3-6.8-3.4-9.8-2.6-1.6-5.4-1.2-7.2 1.2-1.8-3.4-5.2-4.2-8.4-2.4.6-3.8-.8-7-5-9.2 8.8-.6 15.2 2.2 18.4 6.8z" transform="translate(-3 0)"/></svg><svg class="murcielago" style="top:calc(var(--arriba) + 64px);right:62px" viewBox="0 0 48 26" aria-hidden="true"><path d="M24 9c-1.2-3-1-5.6.2-7.6.8 1.4 1.6 2.4 2.6 2.6 1-.2 1.8-1.2 2.6-2.6 1.2 2 1.4 4.6.2 7.6 3.2-4.6 9.6-7.4 18.4-6.8-4.2 2.2-5.6 5.4-5 9.2-3.2-1.8-6.6-1-8.4 2.4-1.8-2.4-4.6-2.8-7.2-1.2-.4 3-1.4 6-3.4 9.8-2-3.8-3-6.8-3.4-9.8-2.6-1.6-5.4-1.2-7.2 1.2-1.8-3.4-5.2-4.2-8.4-2.4.6-3.8-.8-7-5-9.2 8.8-.6 15.2 2.2 18.4 6.8z" transform="translate(-3 0)"/></svg><svg class="murcielago" style="top:calc(var(--arriba) + 40px);right:170px" viewBox="0 0 48 26" aria-hidden="true"><path d="M24 9c-1.2-3-1-5.6.2-7.6.8 1.4 1.6 2.4 2.6 2.6 1-.2 1.8-1.2 2.6-2.6 1.2 2 1.4 4.6.2 7.6 3.2-4.6 9.6-7.4 18.4-6.8-4.2 2.2-5.6 5.4-5 9.2-3.2-1.8-6.6-1-8.4 2.4-1.8-2.4-4.6-2.8-7.2-1.2-.4 3-1.4 6-3.4 9.8-2-3.8-3-6.8-3.4-9.8-2.6-1.6-5.4-1.2-7.2 1.2-1.8-3.4-5.2-4.2-8.4-2.4.6-3.8-.8-7-5-9.2 8.8-.6 15.2 2.2 18.4 6.8z" transform="translate(-3 0)"/></svg></div>
-      <svg class="hw telarana" viewBox="0 0 110 110" aria-hidden="true" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1.4" stroke-linecap="round">
+      <div class="hw murcielagos"><svg class="murcielago" style="top:calc(var(--arriba) + 10px);right:118px" viewBox="0 0 48 26" aria-hidden="true"><path d="M24 9c-1.2-3-1-5.6.2-7.6.8 1.4 1.6 2.4 2.6 2.6 1-.2 1.8-1.2 2.6-2.6 1.2 2 1.4 4.6.2 7.6 3.2-4.6 9.6-7.4 18.4-6.8-4.2 2.2-5.6 5.4-5 9.2-3.2-1.8-6.6-1-8.4 2.4-1.8-2.4-4.6-2.8-7.2-1.2-.4 3-1.4 6-3.4 9.8-2-3.8-3-6.8-3.4-9.8-2.6-1.6-5.4-1.2-7.2 1.2-1.8-3.4-5.2-4.2-8.4-2.4.6-3.8-.8-7-5-9.2 8.8-.6 15.2 2.2 18.4 6.8z" transform="translate(-3 0)"/></svg><svg class="murcielago" style="top:calc(var(--arriba) + 70px);right:44px" viewBox="0 0 48 26" aria-hidden="true"><path d="M24 9c-1.2-3-1-5.6.2-7.6.8 1.4 1.6 2.4 2.6 2.6 1-.2 1.8-1.2 2.6-2.6 1.2 2 1.4 4.6.2 7.6 3.2-4.6 9.6-7.4 18.4-6.8-4.2 2.2-5.6 5.4-5 9.2-3.2-1.8-6.6-1-8.4 2.4-1.8-2.4-4.6-2.8-7.2-1.2-.4 3-1.4 6-3.4 9.8-2-3.8-3-6.8-3.4-9.8-2.6-1.6-5.4-1.2-7.2 1.2-1.8-3.4-5.2-4.2-8.4-2.4.6-3.8-.8-7-5-9.2 8.8-.6 15.2 2.2 18.4 6.8z" transform="translate(-3 0)"/></svg><svg class="murcielago" style="top:calc(var(--arriba) + 58px);right:176px" viewBox="0 0 48 26" aria-hidden="true"><path d="M24 9c-1.2-3-1-5.6.2-7.6.8 1.4 1.6 2.4 2.6 2.6 1-.2 1.8-1.2 2.6-2.6 1.2 2 1.4 4.6.2 7.6 3.2-4.6 9.6-7.4 18.4-6.8-4.2 2.2-5.6 5.4-5 9.2-3.2-1.8-6.6-1-8.4 2.4-1.8-2.4-4.6-2.8-7.2-1.2-.4 3-1.4 6-3.4 9.8-2-3.8-3-6.8-3.4-9.8-2.6-1.6-5.4-1.2-7.2 1.2-1.8-3.4-5.2-4.2-8.4-2.4.6-3.8-.8-7-5-9.2 8.8-.6 15.2 2.2 18.4 6.8z" transform="translate(-3 0)"/></svg></div>
+      <svg class="hw telarana" viewBox="0 0 110 130" style="height:130px;overflow:visible" aria-hidden="true" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1.4" stroke-linecap="round">
         <path d="M110 0 L0 0 M110 0 L10 70 M110 0 L45 105 M110 0 L95 110 M110 0 L110 110"/>
         <path d="M86 0 Q92 12 103 18 Q106 22 110 24"/>
         <path d="M60 0 Q70 22 89 36 Q93 50 110 52"/>
         <path d="M34 0 Q50 32 70 54 Q75 74 103 82 L110 82"/>
         <path d="M12 0 Q30 40 50 70 Q56 92 80 100 Q92 104 98 110"/>
-        <circle cx="72" cy="40" r="3" fill="#fff" fill-opacity=".8" stroke="none"/><path d="M72 0 V37"/>
+        <g class="arana"><path d="M72 0 V40"/>
+          <g stroke="#fff" stroke-opacity=".9" stroke-width="1.3" fill="none">
+            <path d="M68 44 q-6 -4 -9 -2 M68 46 q-7 0 -10 3 M68 48 q-6 3 -8 8 M69 50 q-4 5 -4 10"/>
+            <path d="M76 44 q6 -4 9 -2 M76 46 q7 0 10 3 M76 48 q6 3 8 8 M75 50 q4 5 4 10"/>
+          </g>
+          <circle cx="72" cy="43" r="3.2" fill="#141414" stroke="#fff" stroke-width="1" stroke-opacity=".9"/>
+          <ellipse cx="72" cy="50" rx="5.2" ry="6.4" fill="#141414" stroke="#fff" stroke-width="1" stroke-opacity=".9"/>
+          <path d="M70 47.5 h4 l-1.6 2.5 1.6 2.5 h-4 l1.6 -2.5 z" fill="#E7191F" stroke="none"/>
+        </g>
       </svg>
-      <img class="logo" alt="Capital Swaps">
+      <img class="logo" alt="Capital Swaps"><svg class="hw logo-hw" viewBox="0 0 400 290" role="img" aria-label="Capital Swaps"><g transform="rotate(-5 200 200)"><g transform="translate(6 178)"><path d="M0 22 L46 6 L152 3 L160 9 L156 16 L162 24 L156 33 L160 38 L152 42 L46 38 Z" fill="#6B4022" stroke="#141414" stroke-width="4" stroke-linejoin="round"/><path d="M58 14 L146 12 M64 22 L150 22 M58 30 L140 32" stroke="#432611" stroke-width="2.4" stroke-linecap="round" fill="none"/><path d="M0 22 L30 11.5 L34 18 L28 26 L34 31 L30 33.5 Z" fill="#B3121A"/><path d="M24 34 q1 7 3 9 q2 -3 1 -9 Z" fill="#B3121A"/></g><g transform="translate(394 178) scale(-1,1)"><path d="M0 22 L46 6 L152 3 L160 9 L156 16 L162 24 L156 33 L160 38 L152 42 L46 38 Z" fill="#6B4022" stroke="#141414" stroke-width="4" stroke-linejoin="round"/><path d="M58 14 L146 12 M64 22 L150 22 M58 30 L140 32" stroke="#432611" stroke-width="2.4" stroke-linecap="round" fill="none"/><path d="M0 22 L30 11.5 L34 18 L28 26 L34 31 L30 33.5 Z" fill="#B3121A"/><path d="M24 34 q1 7 3 9 q2 -3 1 -9 Z" fill="#B3121A"/></g></g><g transform="rotate(-4 200 110) skewX(-8)"><text x="52" y="135" font-family="Butcherman, Impact, sans-serif" font-size="82" textLength="330" lengthAdjust="spacingAndGlyphs" fill="#00BF63" stroke="#00BF63" stroke-width="12" stroke-linejoin="round" paint-order="stroke" >CAPITAL</text><text x="46" y="128" font-family="Butcherman, Impact, sans-serif" font-size="82" textLength="330" lengthAdjust="spacingAndGlyphs" fill="#141414" stroke="#E7191F" stroke-width="9" stroke-linejoin="round" paint-order="stroke" >CAPITAL</text></g><g transform="rotate(-7 200 200) skewX(-10)"><text x="114" y="233" font-family="Butcherman, Impact, sans-serif" font-size="80" textLength="250" lengthAdjust="spacingAndGlyphs" fill="#00BF63" stroke="#00BF63" stroke-width="12" stroke-linejoin="round" paint-order="stroke" >SWAPS</text><text x="108" y="226" font-family="Butcherman, Impact, sans-serif" font-size="80" textLength="250" lengthAdjust="spacingAndGlyphs" fill="#E7191F" stroke="#141414" stroke-width="9" stroke-linejoin="round" paint-order="stroke" >SWAPS</text></g></svg>
       <div>
         <p id="saludo-sub">Bienvenido a tu portal de socio</p>
         <h1 class="titulo" id="saludo">Hola</h1>
@@ -761,7 +801,7 @@ $("u-cta").addEventListener("click", () => abrirBot(modo));
 function pintarBarraTg(rojo) {
   if (!tg || !tg.isVersionAtLeast || !tg.isVersionAtLeast("6.9")) return;
   const fondo = getComputedStyle(document.documentElement).getPropertyValue("--fondo").trim() || "#FBF6EC";
-  try { tg.setHeaderColor(rojo ? "#E7191F" : fondo); } catch (e) {}
+  try { tg.setHeaderColor(rojo ? (document.body.classList.contains("halloween") ? "#141414" : "#E7191F") : fondo); } catch (e) {}
 }
 
 // ===== Arranque =====
