@@ -66,7 +66,8 @@
     transition: opacity .35s ease;
   }
   #carga.fuera { opacity: 0; pointer-events: none; }
-  #carga img { width: min(320px, 82vw); }
+  #carga img { width: min(320px, 82vw); position: relative; }
+  .carga-info, #carga-error { position: relative; }
   .carga-info { width: 100%; max-width: 310px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
   #carga-pct { font-size: 34px; font-weight: 900; font-style: italic; color: var(--amarillo); text-shadow: 3px 3px 0 #141414; line-height: 1; }
   .carga-pista { width: 100%; height: 16px; border-radius: 999px; background: #fff; border: 2.5px solid #141414; box-shadow: 3px 3px 0 #141414; overflow: hidden; }
@@ -86,7 +87,7 @@
   .cabecera img { width: 200px; }
   .cabecera p { font-size: 15px; font-weight: 500; color: #fff; }
   .cabecera h1 { font-size: 30px; color: #fff; text-shadow: 3px 3px 0 #141414; margin-top: 2px; }
-  .capital { margin: -76px 18px 0; border-radius: 26px; padding: 16px 16px 16px 10px; display: flex; gap: 10px; align-items: center; }
+  .capital { position: relative; z-index: 1; margin: -76px 18px 0; border-radius: 26px; padding: 16px 16px 16px 10px; display: flex; gap: 10px; align-items: center; }
   .capital > img { width: 104px; flex-shrink: 0; }
   .capital .monto { font-size: clamp(26px, 8vw, 30px); font-weight: 900; font-style: italic; letter-spacing: -0.02em; line-height: 1.05; }
   .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
@@ -172,6 +173,29 @@
   .estado.rechazado { background: var(--rojo); color: #fff; }
   .vacio { text-align: center; padding: 40px 10px; color: var(--tenue); font-weight: 600; }
 
+
+  /* ---------- tema de Halloween (se activa solo del 24 oct al 1 nov) ---------- */
+  body.halloween { --amarillo: #FF8A00; --suave: #FFE2C2; }
+  @media (prefers-color-scheme: dark) { body.halloween:not([data-tema-claro]) { --suave: #3D2410; } }
+  .hw { display: none; pointer-events: none; }
+  body.halloween .hw { display: block; }
+  .murcielagos { position: absolute; inset: 0; overflow: hidden; }
+  .murcielago { position: absolute; width: 34px; fill: #141414; animation: aletear 3.2s ease-in-out infinite; }
+  .murcielago:nth-child(2) { width: 24px; animation-duration: 2.6s; animation-delay: -.8s; }
+  .murcielago:nth-child(3) { width: 18px; animation-duration: 3.8s; animation-delay: -1.6s; }
+  @keyframes aletear { 0%, 100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-9px) rotate(6deg); } }
+  #carga .vuelo { position: absolute; width: 46px; fill: #141414; left: -60px; animation: cruzar 6s linear infinite; }
+  #carga .vuelo:nth-of-type(2) { width: 30px; animation-duration: 8s; animation-delay: -3s; }
+  #carga .vuelo:nth-of-type(3) { width: 22px; animation-duration: 7s; animation-delay: -5s; }
+  @keyframes cruzar { 0% { transform: translate(0, 0) rotate(-4deg); } 25% { transform: translate(28vw, -14px) rotate(4deg); } 50% { transform: translate(56vw, 6px) rotate(-4deg); } 75% { transform: translate(84vw, -10px) rotate(4deg); } 100% { transform: translate(115vw, 0) rotate(-4deg); } }
+  .telarana { position: absolute; top: var(--arriba); right: 0; width: 110px; height: 110px; }
+  .cabecera { position: relative; overflow: hidden; }
+  .cabecera > *:not(.hw) { position: relative; }
+  .halloween-saludo { margin: 14px 18px 0; padding: 12px 14px; align-items: center; gap: 12px; }
+  body.halloween .halloween-saludo { display: flex; }
+  .halloween-saludo svg { width: 46px; height: 46px; flex-shrink: 0; }
+  @media (prefers-reduced-motion: reduce) { .murcielago, #carga .vuelo { animation: none; } #carga .vuelo { left: auto; } }
+
   /* ---------- navegación ---------- */
   nav {
     position: fixed; z-index: 10; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px));
@@ -186,6 +210,7 @@
 <body>
 
 <div id="carga" role="status" aria-live="polite">
+  <div class="hw" style="position:absolute;inset:0;overflow:hidden" aria-hidden="true"><svg class="vuelo" style="top:22%" viewBox="0 0 48 26" aria-hidden="true"><path d="M24 9c-1.2-3-1-5.6.2-7.6.8 1.4 1.6 2.4 2.6 2.6 1-.2 1.8-1.2 2.6-2.6 1.2 2 1.4 4.6.2 7.6 3.2-4.6 9.6-7.4 18.4-6.8-4.2 2.2-5.6 5.4-5 9.2-3.2-1.8-6.6-1-8.4 2.4-1.8-2.4-4.6-2.8-7.2-1.2-.4 3-1.4 6-3.4 9.8-2-3.8-3-6.8-3.4-9.8-2.6-1.6-5.4-1.2-7.2 1.2-1.8-3.4-5.2-4.2-8.4-2.4.6-3.8-.8-7-5-9.2 8.8-.6 15.2 2.2 18.4 6.8z" transform="translate(-3 0)"/></svg><svg class="vuelo" style="top:30%" viewBox="0 0 48 26" aria-hidden="true"><path d="M24 9c-1.2-3-1-5.6.2-7.6.8 1.4 1.6 2.4 2.6 2.6 1-.2 1.8-1.2 2.6-2.6 1.2 2 1.4 4.6.2 7.6 3.2-4.6 9.6-7.4 18.4-6.8-4.2 2.2-5.6 5.4-5 9.2-3.2-1.8-6.6-1-8.4 2.4-1.8-2.4-4.6-2.8-7.2-1.2-.4 3-1.4 6-3.4 9.8-2-3.8-3-6.8-3.4-9.8-2.6-1.6-5.4-1.2-7.2 1.2-1.8-3.4-5.2-4.2-8.4-2.4.6-3.8-.8-7-5-9.2 8.8-.6 15.2 2.2 18.4 6.8z" transform="translate(-3 0)"/></svg><svg class="vuelo" style="top:72%" viewBox="0 0 48 26" aria-hidden="true"><path d="M24 9c-1.2-3-1-5.6.2-7.6.8 1.4 1.6 2.4 2.6 2.6 1-.2 1.8-1.2 2.6-2.6 1.2 2 1.4 4.6.2 7.6 3.2-4.6 9.6-7.4 18.4-6.8-4.2 2.2-5.6 5.4-5 9.2-3.2-1.8-6.6-1-8.4 2.4-1.8-2.4-4.6-2.8-7.2-1.2-.4 3-1.4 6-3.4 9.8-2-3.8-3-6.8-3.4-9.8-2.6-1.6-5.4-1.2-7.2 1.2-1.8-3.4-5.2-4.2-8.4-2.4.6-3.8-.8-7-5-9.2 8.8-.6 15.2 2.2 18.4 6.8z" transform="translate(-3 0)"/></svg></div>
   <img class="logo" alt="Capital Swaps">
   <div class="carga-info" id="carga-info">
     <p id="carga-pct">0 %</p>
@@ -203,6 +228,15 @@
   <!-- INICIO -->
   <section id="v-inicio">
     <header class="cabecera">
+      <div class="hw murcielagos"><svg class="murcielago" style="top:calc(var(--arriba) + 18px);right:120px" viewBox="0 0 48 26" aria-hidden="true"><path d="M24 9c-1.2-3-1-5.6.2-7.6.8 1.4 1.6 2.4 2.6 2.6 1-.2 1.8-1.2 2.6-2.6 1.2 2 1.4 4.6.2 7.6 3.2-4.6 9.6-7.4 18.4-6.8-4.2 2.2-5.6 5.4-5 9.2-3.2-1.8-6.6-1-8.4 2.4-1.8-2.4-4.6-2.8-7.2-1.2-.4 3-1.4 6-3.4 9.8-2-3.8-3-6.8-3.4-9.8-2.6-1.6-5.4-1.2-7.2 1.2-1.8-3.4-5.2-4.2-8.4-2.4.6-3.8-.8-7-5-9.2 8.8-.6 15.2 2.2 18.4 6.8z" transform="translate(-3 0)"/></svg><svg class="murcielago" style="top:calc(var(--arriba) + 64px);right:62px" viewBox="0 0 48 26" aria-hidden="true"><path d="M24 9c-1.2-3-1-5.6.2-7.6.8 1.4 1.6 2.4 2.6 2.6 1-.2 1.8-1.2 2.6-2.6 1.2 2 1.4 4.6.2 7.6 3.2-4.6 9.6-7.4 18.4-6.8-4.2 2.2-5.6 5.4-5 9.2-3.2-1.8-6.6-1-8.4 2.4-1.8-2.4-4.6-2.8-7.2-1.2-.4 3-1.4 6-3.4 9.8-2-3.8-3-6.8-3.4-9.8-2.6-1.6-5.4-1.2-7.2 1.2-1.8-3.4-5.2-4.2-8.4-2.4.6-3.8-.8-7-5-9.2 8.8-.6 15.2 2.2 18.4 6.8z" transform="translate(-3 0)"/></svg><svg class="murcielago" style="top:calc(var(--arriba) + 40px);right:170px" viewBox="0 0 48 26" aria-hidden="true"><path d="M24 9c-1.2-3-1-5.6.2-7.6.8 1.4 1.6 2.4 2.6 2.6 1-.2 1.8-1.2 2.6-2.6 1.2 2 1.4 4.6.2 7.6 3.2-4.6 9.6-7.4 18.4-6.8-4.2 2.2-5.6 5.4-5 9.2-3.2-1.8-6.6-1-8.4 2.4-1.8-2.4-4.6-2.8-7.2-1.2-.4 3-1.4 6-3.4 9.8-2-3.8-3-6.8-3.4-9.8-2.6-1.6-5.4-1.2-7.2 1.2-1.8-3.4-5.2-4.2-8.4-2.4.6-3.8-.8-7-5-9.2 8.8-.6 15.2 2.2 18.4 6.8z" transform="translate(-3 0)"/></svg></div>
+      <svg class="hw telarana" viewBox="0 0 110 110" aria-hidden="true" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1.4" stroke-linecap="round">
+        <path d="M110 0 L0 0 M110 0 L10 70 M110 0 L45 105 M110 0 L95 110 M110 0 L110 110"/>
+        <path d="M86 0 Q92 12 103 18 Q106 22 110 24"/>
+        <path d="M60 0 Q70 22 89 36 Q93 50 110 52"/>
+        <path d="M34 0 Q50 32 70 54 Q75 74 103 82 L110 82"/>
+        <path d="M12 0 Q30 40 50 70 Q56 92 80 100 Q92 104 98 110"/>
+        <circle cx="72" cy="40" r="3" fill="#fff" fill-opacity=".8" stroke="none"/><path d="M72 0 V37"/>
+      </svg>
       <img class="logo" alt="Capital Swaps">
       <div>
         <p id="saludo-sub">Bienvenido a tu portal de socio</p>
@@ -220,6 +254,21 @@
             <span class="chip" id="chip-nivel" style="background:#fff"></span>
             <span class="chip" id="chip-ea" style="background:var(--verde)" hidden></span>
           </div>
+        </div>
+      </div>
+
+      <div class="hw halloween-saludo tarjeta sticker" style="pointer-events:auto">
+        <svg viewBox="0 0 48 48" aria-hidden="true">
+          <path d="M24 12c-1-4 0-7 3-9" stroke="#1C7A3A" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <ellipse cx="15" cy="28" rx="10" ry="14" fill="#FF8A00" stroke="#141414" stroke-width="2.5"/>
+          <ellipse cx="33" cy="28" rx="10" ry="14" fill="#FF8A00" stroke="#141414" stroke-width="2.5"/>
+          <ellipse cx="24" cy="28" rx="10" ry="15" fill="#FF9F2E" stroke="#141414" stroke-width="2.5"/>
+          <path d="M17 24l4 4h-6zM31 24l2 4h-6z" fill="#141414"/>
+          <path d="M15 33q9 7 18 0l-3 1-2-2-2 3-2-3-2 3-2-3-2 2z" fill="#141414"/>
+        </svg>
+        <div>
+          <p style="font-size:16px;font-weight:900;font-style:italic">¡Feliz Halloween!</p>
+          <p class="tenue" style="font-size:13px;font-weight:600">Que tu capital crezca más que el miedo.</p>
         </div>
       </div>
 
@@ -353,6 +402,15 @@
 </nav>
 
 <script>
+
+// ===== Tema de temporada =====
+(function () {
+  const p = new URLSearchParams(location.search).get("tema");
+  const hoy = new Date(), m = hoy.getMonth() + 1, d = hoy.getDate();
+  const enFecha = (m === 10 && d >= 24) || (m === 11 && d <= 1);
+  if (p === "halloween" || (p !== "normal" && enFecha)) document.body.classList.add("halloween");
+})();
+
 // ===== Configuración =====
 const API = "/api/index.php";   // la API vive en el mismo dominio (app.capitalswaps.com/api)
 // Usuario del bot sin @. Los botones de acción abren el chat con /start aportar|retirar|comprar|vender.
