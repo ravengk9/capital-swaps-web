@@ -55,7 +55,7 @@ try {
         case '/me':
             $base = ['telegram_id' => $user['id'], 'first_name' => $user['first_name'] ?? ''];
             $socio = buscar_socio($user['id']);
-            if (!$socio) responder(200, $base + ['es_socio' => false]);
+            if (!$socio) responder(200, $base + ['es_socio' => false, 'niveles' => niveles(bloque_socios())]);
             $resp = $base + ['es_socio' => true] + $socio;
             $nivel = $socio['nivel_info'];
             $resp['nivel'] = $nivel ? mb_strtoupper($nivel['nombre'], 'UTF-8') : null;
