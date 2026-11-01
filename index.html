@@ -247,6 +247,25 @@
   @media (prefers-reduced-motion: reduce) { #carga .destello, #carga .rayo { display: none; } body.halloween #carga .logo-hw { animation: none; } }
   @media (prefers-reduced-motion: reduce) { .murcielago, #carga .vuelo, .arana { animation: none; } #carga .vuelo { left: auto; } }
 
+
+  /* ---------- clientes y pestaña Socios ---------- */
+  #bloque-cliente { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 14px; padding: 0 18px; }
+  #bloque-cliente[hidden] { display: none; }
+  .cliente-tarjeta { padding: 18px; }
+  .medallas-mini { display: flex; gap: 4px; }
+  .medallas-mini img { height: 46px; width: auto; }
+  .niveles-lista { list-style: none; padding: 0; margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .niveles-lista li { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 2px 14px; align-items: center; padding: 12px 16px 12px 10px; }
+  .niveles-lista img { grid-row: span 2; height: 64px; width: auto; justify-self: center; }
+  .niveles-lista .n-nombre { font-size: 18px; font-weight: 900; font-style: italic; }
+  .niveles-lista .n-min { font-size: 13px; font-weight: 600; color: var(--tenue); white-space: nowrap; }
+  .niveles-lista .n-ea { grid-row: span 2; text-align: right; }
+  .niveles-lista .n-ea strong { display: block; font-size: 22px; font-weight: 900; font-style: italic; color: var(--verde-texto); line-height: 1.1; }
+  .niveles-lista .n-ea span { font-size: 12px; font-weight: 700; color: var(--tenue); }
+  .sim-fila { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-top: 10px; border-top: 1px solid var(--pista); font-size: 14px; }
+  .sim-fila span:first-child { color: var(--tenue); font-weight: 600; }
+  .sim-fila strong { font-size: 17px; font-weight: 900; font-style: italic; text-align: right; }
+
   /* ---------- navegación ---------- */
   nav {
     position: fixed; z-index: 10; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px));
@@ -395,11 +414,24 @@
       </div>
     </div>
 
-    <div id="bloque-cliente" class="pad" hidden>
-      <div class="tarjeta" style="margin-top:-60px;padding:18px">
-        <p style="font-weight:700;font-size:17px">Compra y vende USDT al instante</p>
-        <p class="tenue" style="margin-top:6px;font-size:14px">El portal de socios aparece aquí cuando tu cuenta de Telegram está registrada como socio de Capital Swaps.</p>
-        <button class="boton" type="button" data-ir="usdt" style="margin-top:14px">Ver tasas de hoy</button>
+    <div id="bloque-cliente" hidden>
+      <div class="tarjeta sticker cliente-tarjeta" style="margin-top:-76px">
+        <div class="medallas-mini" aria-hidden="true">
+          <img alt="" data-img="bronce"><img alt="" data-img="plata"><img alt="" data-img="oro">
+        </div>
+        <p class="titulo" style="font-size:24px;margin-top:10px">Haz crecer tus ahorros</p>
+        <p class="tenue" style="font-size:15px;margin-top:6px">Como socio de Capital Swaps ganas hasta <strong id="c-max-ea" style="color:var(--verde-texto)">—</strong> efectivo anual sobre tu capital.</p>
+        <button class="boton" type="button" data-ir="socios" style="margin-top:16px">Conocer la rentabilidad</button>
+      </div>
+      <div class="tarjeta cliente-tarjeta">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="op-icono" style="background:var(--amarillo);grid-row:auto;flex-shrink:0" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg></span>
+          <div>
+            <p style="font-size:17px;font-weight:800">¿Quieres comprar USDT?</p>
+            <p class="tenue" style="font-size:14px;margin-top:2px">Compra y vende al instante en la pestaña <strong>USDT</strong>, con la tasa del día.</p>
+          </div>
+        </div>
+        <button class="boton blanco" type="button" data-ir="usdt" style="margin-top:14px">Ir a USDT</button>
       </div>
     </div>
   </section>
@@ -480,6 +512,32 @@
     </div>
   </section>
 
+  <!-- SOCIOS (solo para quien aún no es socio) -->
+  <section id="v-socios" hidden>
+    <div class="vista-top">
+      <h1 class="titulo">Hazte socio</h1>
+      <p class="tenue" style="font-size:15px;margin-top:4px">Ahorra con Capital Swaps y haz crecer tu capital mes a mes</p>
+      <div class="tasa sticker" style="text-align:center">
+        <p style="font-size:15px;font-weight:600">Gana hasta</p>
+        <strong id="s-max-ea" style="font-size:52px">—</strong>
+        <p style="font-size:15px;font-weight:600">efectivo anual</p>
+      </div>
+
+      <h2 class="seccion">Niveles de socio</h2>
+      <p class="tenue" style="font-size:14px;margin-top:4px">Mientras más capital, mayor rentabilidad.</p>
+      <ul class="niveles-lista" id="s-niveles"></ul>
+
+      <h2 class="seccion">Calcula tu rentabilidad</h2>
+      <div class="simulador tarjeta">
+        <label for="s-monto" style="font-size:14px;font-weight:700">¿Cuánto quieres ahorrar?</label>
+        <div class="campo"><span>COP</span><input id="s-monto" inputmode="numeric" autocomplete="off" value="3.000.000"></div>
+        <div id="s-resultado" aria-live="polite"></div>
+      </div>
+      <button class="boton" type="button" data-accion="socio" style="margin-top:18px">Quiero ser socio</button>
+      <p class="nota">La rentabilidad depende de la tasa vigente de cada nivel. Las proyecciones usan interés compuesto y no son un valor garantizado.</p>
+    </div>
+  </section>
+
 </main>
 
 <nav id="nav" aria-label="Secciones" hidden>
@@ -488,6 +546,9 @@
   </button>
   <button type="button" data-ir="proyeccion" id="nav-proyeccion">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>Proyección
+  </button>
+  <button type="button" data-ir="socios" id="nav-socios" hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17.5" cy="9.5" r="2.5"/><path d="M16 14.6a5 5 0 0 1 5.5 5.4"/></svg>Socios
   </button>
   <button type="button" data-ir="usdt">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg>USDT
@@ -600,7 +661,12 @@ function errorCarga(msg, reintentable) {
 }
 
 async function pedir(path) {
-  if (DEMO) { await new Promise(r => setTimeout(r, 400)); return DEMO_DATA[path.slice(1)]; }
+  if (DEMO) {
+    await new Promise(r => setTimeout(r, 400));
+    if (path === "/me" && new URLSearchParams(location.search).has("cliente"))
+      return { es_socio: false, first_name: "Raven", niveles: DEMO_DATA.me.niveles };
+    return DEMO_DATA[path.slice(1)];
+  }
   const r = await fetch(API + path, { headers: { Authorization: "tma " + tg.initData } });
   if (r.status === 401) throw { tipo: "sesion" };
   if (!r.ok) throw { tipo: "servidor" };
@@ -612,7 +678,8 @@ function pintarInicio() {
   $("saludo").textContent = "Hola, " + (ME.nombre || ME.first_name || "");
   if (!ME.es_socio) {
     $("saludo-sub").textContent = "Bienvenido a Capital Swaps";
-    $("bloque-socio").hidden = true; $("bloque-cliente").hidden = false; $("nav-proyeccion").hidden = true;
+    $("bloque-socio").hidden = true; $("bloque-cliente").hidden = false; $("nav-proyeccion").hidden = true; $("nav-socios").hidden = false;
+    pintarSocios();
     document.querySelectorAll(".solo-socio").forEach(b => { b.hidden = true; });
     return;
   }
@@ -717,6 +784,57 @@ document.querySelectorAll("#u-tabs button").forEach(b => b.addEventListener("cli
 document.querySelectorAll("#p-tabs button").forEach(b => b.addEventListener("click", () => { meses = Number(b.dataset.meses); pintarProyeccion(); }));
 
 
+
+
+// ===== Pestaña Socios (para quien aún no es socio) =====
+let montoSim = 3000000;
+function nivelesOrdenados() { return (ME && ME.niveles ? ME.niveles.slice() : []).sort((a, b) => b.minimo - a.minimo); }
+function pintarSocios() {
+  const niv = nivelesOrdenados();
+  if (!niv.length) return;
+  const maxEa = Math.max(...niv.map(n => n.ea || 0));
+  $("s-max-ea").textContent = pct(maxEa);
+  $("c-max-ea").textContent = pct(maxEa);
+  document.querySelectorAll("[data-img]").forEach(i => { i.src = IMG[i.dataset.img]; });
+  $("s-niveles").innerHTML = "";
+  niv.forEach(n => {
+    const li = document.createElement("li");
+    li.className = "tarjeta";
+    li.innerHTML = '<img alt=""><span class="n-nombre"></span><span class="n-ea"><strong></strong><span>efectivo anual</span></span><span class="n-min"></span>';
+    li.querySelector("img").src = IMG[n.id]; li.querySelector("img").alt = "Medalla Socio " + n.nombre;
+    li.querySelector(".n-nombre").textContent = "Socio " + n.nombre;
+    li.querySelector(".n-ea strong").textContent = n.ea != null ? pct(n.ea) : "—";
+    li.querySelector(".n-min").textContent = "Desde " + cop.format(n.minimo);
+    $("s-niveles").appendChild(li);
+  });
+  simular();
+}
+function simular() {
+  const niv = nivelesOrdenados(), out = $("s-resultado");
+  if (!niv.length) return;
+  const n = niv.find(x => montoSim >= x.minimo);
+  if (!n) {
+    const min = niv[niv.length - 1];
+    out.innerHTML = '<p class="sim-fila"><span>El mínimo para empezar como Socio ' + min.nombre + ' es</span><strong></strong></p>';
+    out.querySelector("strong").textContent = cop.format(min.minimo);
+    return;
+  }
+  const rm = Math.pow(1 + n.ea, 1 / 12) - 1, en12 = montoSim * Math.pow(1 + rm, 12);
+  out.innerHTML =
+    '<div style="display:flex;align-items:center;gap:12px;padding:6px 0 4px"><img alt="" style="height:52px;width:auto"><div><p class="tenue" style="font-size:13px;font-weight:600">Serías</p><p style="font-size:19px;font-weight:900;font-style:italic"></p></div></div>' +
+    '<p class="sim-fila"><span>Rentabilidad</span><strong style="color:var(--verde-texto)"></strong></p>' +
+    '<p class="sim-fila"><span>En 12 meses tendrías</span><strong></strong></p>' +
+    '<p class="sim-fila"><span>Ganancia estimada</span><strong style="color:var(--verde-texto)"></strong></p>';
+  out.querySelector("img").src = IMG[n.id];
+  out.querySelector("p[style*='19px']").textContent = "Socio " + n.nombre;
+  const st = out.querySelectorAll(".sim-fila strong");
+  st[0].textContent = pct(n.ea) + " E.A."; st[1].textContent = cop.format(en12); st[2].textContent = "+ " + cop.format(en12 - montoSim);
+}
+$("s-monto").addEventListener("input", e => {
+  montoSim = Number(e.target.value.replace(/\D/g, "")) || 0;
+  e.target.value = montoSim ? entero.format(montoSim) : "";
+  simular();
+});
 
 // ===== Precios del mercado =====
 const MONEDA_ESTILO = { "usd-cop": ["$", "#00BF63"], bitcoin: ["₿", "#F7931A"], ethereum: ["Ξ", "#627EEA"] };
@@ -835,7 +953,7 @@ document.querySelectorAll("#h-filtros button").forEach(b => b.addEventListener("
 
 // ===== Navegación y acciones =====
 function ir(vista) {
-  ["inicio", "proyeccion", "usdt", "historial"].forEach(v => { $("v-" + v).hidden = v !== vista; });
+  ["inicio", "proyeccion", "socios", "usdt", "historial"].forEach(v => { $("v-" + v).hidden = v !== vista; });
   document.body.classList.toggle("en-inicio", vista === "inicio");
   document.querySelectorAll("nav button").forEach(b => b.removeAttribute("aria-current"));
   document.querySelector('nav button[data-ir="' + vista + '"]').setAttribute("aria-current", "page");
